@@ -33,6 +33,8 @@ prisma/
   seed.ts                Stammdaten, Demo-User, Beispielkampagnen
 src/
   app/                   Next.js App Router (Seiten)
+    page.tsx             Dashboard (Kennzahlen, Filter, Kampagnenkarten, Kritisch-Bereich)
+    vergleich/           Kampagnen nebeneinander vergleichen (?k=slug-a,slug-b)
     kampagnen/neu        Launch-Charter-Wizard (neue Kampagne)
     kampagnen/[slug]     Mindmap (Kernansicht), Funnel-Ansicht, Charter-Ansicht, Charter bearbeiten
     kampagnen/actions.ts Server Actions: Kampagne aus Charter anlegen, Charter versioniert ändern
@@ -40,6 +42,7 @@ src/
   components/            UI-Komponenten (shadcn/ui-Konventionen, components.json)
     ui/                  Basiskomponenten (Button, Input, Select, Field …)
     charter/             Wizard und seine Schritte
+    dashboard/           Filterleiste, Kampagnenkarte, Vergleichsauswahl, Kritisch-Liste
     mindmap/             React-Flow-Mindmap, Knoten, Detail-Panel, Kanal-/Asset-Formulare
   lib/
     config.ts            zentrale Schwellen (z. B. „fällig in 7 Tagen“), Zeitzone, Locale
@@ -48,6 +51,7 @@ src/
     status/              abgeleitete Status-Logik (Fortschritt, Ampel, Phase, Rollup) + Tests
     validation/          Zod-Schemas (Charter-Daten, KPI-Ziele, Märkte …), gemeinsame Feld-Schemas
     charter/             Wizard-Formular (Zod), Erzeugung von Kampagne/Kanälen/Assets aus der Charter + Tests
+    dashboard/           Filter (URL-Parameter), Sortierung, Kritisch-Listen, Kennzahlen, Zeitleiste + Tests
     entities/            Kanal-/Asset-Formulare (Zod), Änderungserkennung fürs Activity Log + Tests
     mindmap/             Graph-Aufbau mit Status-Rollup und Baum-Layout + Tests
     format.ts            deutsche Zahleneingabe, Cent-Umrechnung, Slugs, Datumsfelder
@@ -87,6 +91,10 @@ src/
   die Struktur ist fest vierstufig (Kampagne → Stufe → Kanal → Asset), so bleibt die Anordnung
   stabil und vorhersagbar: Baum von links nach rechts, Funnel-Stufen von oben nach unten,
   jeder Knoten mittig zu seinen Kindern. Knoten sind nicht frei verschiebbar.
+- **Dashboard-Filter** stehen in der URL (z. B. `/?markt=DE,AT&phase=LIVE&ampel=RED&sortierung=ampel`),
+  gefilterte Ansichten lassen sich also als Link teilen. Markt: Kampagne läuft in mindestens einem der
+  gewählten Märkte. Zeitraum: Kampagnenzeitraum überschneidet sich mit dem gewählten Zeitraum.
+  Kennzahlen und Kritisch-Bereich beziehen sich auf die gefilterten Kampagnen.
 - **Activity Log:** Anlegen, Ändern (mit geänderten Feldern), Verschieben, Löschen und
   Statuswechsel (`status_changed` mit von/nach) von Kanälen und Assets werden protokolliert.
 - **Links** hängen über echte Fremdschlüssel an Kampagne, Kanal oder Asset (Cascade-Delete).
@@ -141,6 +149,21 @@ src/
 - Viewer sehen alles, können aber nichts ändern; die Server Actions prüfen die Rechte zusätzlich
 - Die bisherige Spaltenansicht ist jetzt der Tab „Funnel“
 
+### Phase 4 – Dashboard ✅
+
+- Kennzahlen: Kampagnen, Live, Kritisch (rot), überfällige und bald fällige Assets
+- Filter: Suche (Name/Marke/Produktlinie), Markt, Phase, Ampel (Mehrfachauswahl), Marke,
+  Produktlinie, Owner, Umsetzung, Zeitraum; Sortierung nach Start, Ende, Dringlichkeit oder Name;
+  „Filter zurücksetzen“
+- Kampagnenkarten mit Ampel, Phase, Zeitraum, Fortschritt, Markt-Badges, Funnel-Rollup und offenen
+  Terminen; Klick öffnet die Mindmap
+- Bereich „Kritisch“ mit Tabs „Überfällig“ / „Bald fällig“ über alle (gefilterten) Kampagnen;
+  jeder Eintrag springt direkt zum Asset in der Mindmap
+- Vergleich: bis zu 4 Kampagnen per „Vergleichen“ auswählen → `/vergleich` mit gemeinsamer
+  Zeitleiste (inkl. Heute-Markierung) und Gegenüberstellung von Eckdaten, Budget je Stufe,
+  Fortschritt und Ampel je Funnel-Stufe, überfälligen/bald fälligen Assets
+
 ### Als Nächstes
 
-Phase 4 – Dashboard: Karten, Filter, Ampeln, Kritisch-Bereich.
+Phase 5 – Links & Integrationen: Frontify-, SharePoint-, Looker-Studio-Links an Kampagne, Kanal
+und Asset pflegen, Looker-Einbettung.

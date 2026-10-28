@@ -48,3 +48,25 @@ export async function getCharterFormOptions() {
 }
 
 export type CharterFormOptions = Awaited<ReturnType<typeof getCharterFormOptions>>;
+
+/** All campaigns with what the dashboard needs for rollups, filters and the critical list. */
+export async function getDashboardCampaigns() {
+  return db.campaign.findMany({
+    orderBy: { startDate: "asc" },
+    include: {
+      owner: { select: { id: true, name: true } },
+      channels: {
+        orderBy: { sortOrder: "asc" },
+        select: {
+          id: true,
+          name: true,
+          funnelStage: true,
+          assets: {
+            orderBy: { sortOrder: "asc" },
+            select: { id: true, title: true, status: true, dueDate: true, owner: { select: { name: true } } },
+          },
+        },
+      },
+    },
+  });
+}
