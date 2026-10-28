@@ -7,6 +7,7 @@ import {
   type TrafficLight,
 } from "@/lib/domain/enums";
 import type { Progress } from "@/lib/status";
+import { STAGE_STYLES } from "@/components/stage-styles";
 
 const TRAFFIC_LIGHT_STYLES: Record<TrafficLight, { dot: string; label: string }> = {
   RED: { dot: "bg-status-red", label: "Kritisch" },
@@ -40,16 +41,10 @@ export function MarketBadge({ market }: { market: string }) {
   );
 }
 
-const STAGE_BG: Record<FunnelStage, string> = {
-  AWARENESS: "bg-stage-awareness",
-  CONSIDERATION: "bg-stage-consideration",
-  SALES: "bg-stage-sales",
-};
-
 export function StageDot({ stage }: { stage: FunnelStage }) {
   return (
     <span
-      className={cn("inline-block size-2 rounded-full", STAGE_BG[stage])}
+      className={cn("inline-block size-2 rounded-full", STAGE_STYLES[stage].bg)}
       title={FUNNEL_STAGE_LABELS[stage]}
       aria-hidden
     />

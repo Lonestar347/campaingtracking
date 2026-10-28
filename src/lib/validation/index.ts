@@ -30,6 +30,25 @@ const optionalText = z.string().trim().optional();
  * (basis data like name, dates and markets lives on the campaign itself).
  */
 export const launchCharterDataSchema = z.object({
+  /**
+   * Snapshot of the basis fields at the time of this version, so changes to
+   * name, period, markets etc. are traceable in the version history. The
+   * campaign columns remain the source of truth for the current values.
+   */
+  basis: z
+    .object({
+      name: z.string(),
+      description: optionalText,
+      brand: optionalText,
+      productLine: optionalText,
+      markets: z.array(z.string()),
+      startDate: z.string(), // YYYY-MM-DD
+      endDate: z.string(),
+      ownerId: z.string(),
+      executionType: z.string(),
+      partners: z.array(z.string()),
+    })
+    .optional(),
   strategy: z.object({
     objective: optionalText,
     targetAudience: optionalText,

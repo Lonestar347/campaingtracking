@@ -311,8 +311,22 @@ async function main() {
   const userId = (key?: string) => (key ? users.get(key as UserKey) : undefined);
 
   for (const c of CAMPAIGNS) {
-    const charterData = launchCharterDataSchema.parse(c.charter);
     const ownerId = userId(c.owner)!;
+    const charterData = launchCharterDataSchema.parse({
+      ...c.charter,
+      basis: {
+        name: c.name,
+        description: c.description,
+        brand: c.brand,
+        productLine: c.productLine,
+        markets: c.markets,
+        startDate: day(c.start).toISOString().slice(0, 10),
+        endDate: day(c.end).toISOString().slice(0, 10),
+        ownerId,
+        executionType: c.executionType,
+        partners: c.partners,
+      },
+    });
 
     const campaign = await db.campaign.create({
       data: {

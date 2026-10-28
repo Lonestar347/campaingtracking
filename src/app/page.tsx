@@ -1,3 +1,6 @@
+import Link from "next/link";
+import { Plus } from "lucide-react";
+import { can, getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { formatDateRange, formatEuroCents } from "@/lib/dates";
 import { EXECUTION_TYPE_LABELS, FUNNEL_STAGES, FUNNEL_STAGE_LABELS, type ExecutionType } from "@/lib/domain/enums";
@@ -10,11 +13,12 @@ import {
   StageDot,
   TrafficLightBadge,
 } from "@/components/status-badges";
+import { buttonVariants } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
 
-// Phase 1 check page: lists the seeded campaigns with their derived status.
-// The real dashboard follows in phase 4.
+// Campaign overview with derived status. The full dashboard (filters,
+// comparison, critical section) follows in phase 4.
 export default async function HomePage() {
   const campaigns = await db.campaign.findMany({
     orderBy: { startDate: "asc" },
@@ -24,28 +28,43 @@ export default async function HomePage() {
     },
   });
   const now = new Date();
+  const user = await getCurrentUser();
+  const canCreate = !!user && can(user.role, "write");
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Kampagnen</h1>
-        <p className="text-sm text-muted-foreground">
-          Grundgerüst (Phase 1): Kampagnen aus der Datenbank mit abgeleitetem Status.
-        </p>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Kampagnen</h1>
+          <p className="text-sm text-muted-foreground">Alle Kampagnen mit abgeleitetem Status.</p>
+        </div>
+        {canCreate && (
+          <Link href="/kampagnen/neu" className={buttonVariants({ variant: "accent" })}>
+            <Plus /> Neue Kampagne
+          </Link>
+        )}
       </div>
 
       {campaigns.length === 0 ? (
         <p className="rounded-lg border p-6 text-sm text-muted-foreground">
-          Noch keine Kampagnen. Seed-Daten laden mit <code>npm run db:seed</code>.
+          Noch keine Kampagnen. Neue Kampagne über die Launch Charter anlegen oder Beispieldaten laden mit{" "}
+          <code>npm run db:seed</code>.
         </p>
       ) : (
         <ul className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {campaigns.map((campaign) => {
             const rollup = rollupCampaign(campaign, now);
             return (
-              <li key={campaign.id} className="flex flex-col gap-4 rounded-xl border bg-card p-5 shadow-sm">
+              <li
+                key={campaign.id}
+                className="relative flex flex-col gap-4 rounded-xl border bg-card p-5 shadow-sm transition-shadow focus-within:ring-2 focus-within:ring-ring hover:shadow-md"
+              >
                 <div className="flex items-start justify-between gap-2">
-                  <h2 className="font-semibold leading-tight">{campaign.name}</h2>
+                  <h2 className="font-semibold leading-tight">
+                    <Link href={`/kampagnen/${campaign.slug}`} className="outline-none after:absolute after:inset-0">
+                      {campaign.name}
+                    </Link>
+                  </h2>
                   <PhaseBadge value={rollup.campaign.phase} />
                 </div>
 
