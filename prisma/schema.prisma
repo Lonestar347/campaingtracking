@@ -1,0 +1,262 @@
+// Kampagnen-Tracker data model.
+//
+// Local development runs on SQLite; production will run on PostgreSQL. To stay
+// portable the schema avoids provider-specific types:
+// - Fixed value sets (funnel stage, asset status, role, ...) are plain strings,
+//   validated in the app via Zod (see src/lib/domain/enums.ts).
+// - Lists and key/value data are stored as Json.
+// - Money is stored as integer cents (EUR).
+// Derived values (progress, traffic light, campaign phase) are never stored;
+// they are computed in src/lib/status.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  role      String   @default("viewer") // admin | editor | viewer
+  team      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ownedCampaigns  Campaign[]             @relation("CampaignOwner")
+  ownedChannels   Channel[]              @relation("ChannelOwner")
+  ownedAssets     Asset[]                @relation("AssetOwner")
+  approvedAssets  Asset[]                @relation("AssetApprover")
+  charterVersions LaunchCharterVersion[]
+  kpiReports      KpiReport[]
+  comments        Comment[]
+  activities      ActivityLog[]
+}
+
+model Campaign {
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique
+  description   String?
+  objective     String?
+  keyMessage    String?
+  startDate     DateTime
+  endDate       DateTime
+  budgetCents   Int? // total budget in EUR cents
+  markets       Json // Market[], e.g. ["DE", "AT"]
+  brand         String?
+  productLine   String?
+  ownerId       String
+  partners      Json // string[]: agencies / production partners
+  executionType String // agency | inhouse | mixed
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  owner      User           @relation("CampaignOwner", fields: [ownerId], references: [id])
+  charter    LaunchCharter?
+  channels   Channel[]
+  links      Link[]
+  kpiReports KpiReport[]
+
+  @@index([ownerId])
+}
+
+/// Structured start information of a campaign. `data` always holds the current
+/// state; every save also writes an immutable LaunchCharterVersion.
+model LaunchCharter {
+  id             String   @id @default(cuid())
+  campaignId     String   @unique
+  currentVersion Int      @default(1)
+  data           Json // see launchCharterDataSchema in src/lib/validation
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  campaign Campaign               @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  versions LaunchCharterVersion[]
+}
+
+model LaunchCharterVersion {
+  id          String   @id @default(cuid())
+  charterId   String
+  version     Int
+  data        Json
+  changeNote  String?
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  charter   LaunchCharter @relation(fields: [charterId], references: [id], onDelete: Cascade)
+  createdBy User?         @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@unique([charterId, version])
+}
+
+/// Master data: selectable channel types with their default funnel stage.
+model ChannelType {
+  id                 String   @id @default(cuid())
+  key                String   @unique
+  name               String
+  defaultFunnelStage String // AWARENESS | CONSIDERATION | SALES
+  sortOrder          Int      @default(0)
+  active             Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  channels Channel[]
+}
+
+model Channel {
+  id            String    @id @default(cuid())
+  campaignId    String
+  funnelStage   String // AWARENESS | CONSIDERATION | SALES (defaults to the type's stage)
+  channelTypeId String
+  name          String
+  ownerId       String?
+  startDate     DateTime?
+  endDate       DateTime?
+  kpiTargets    Json // Record<kpiName, targetValue>
+  notes         String?
+  sortOrder     Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  campaign    Campaign    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  channelType ChannelType @relation(fields: [channelTypeId], references: [id])
+  owner       User?       @relation("ChannelOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  assets      Asset[]
+  links       Link[]
+  kpiReports  KpiReport[]
+  kpiValues   KpiValue[]
+
+  @@index([campaignId, funnelStage])
+}
+
+model Asset {
+  id         String    @id @default(cuid())
+  channelId  String
+  title      String
+  assetType  String // VIDEO | STATIC | CAROUSEL | ...
+  format     String? // format / specs, e.g. "9:16, 15s"
+  status     String    @default("IDEE")
+  dueDate    DateTime?
+  ownerId    String?
+  approverId String?
+  notes      String?
+  sortOrder  Int       @default(0)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  channel  Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  owner    User?   @relation("AssetOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  approver User?   @relation("AssetApprover", fields: [approverId], references: [id], onDelete: SetNull)
+  links    Link[]
+
+  @@index([channelId])
+  @@index([status, dueDate])
+}
+
+/// External link attached to exactly one of campaign, channel or asset.
+/// Real foreign keys (instead of a generic entity reference) keep integrity and
+/// cascade deletes.
+model Link {
+  id           String   @id @default(cuid())
+  campaignId   String?
+  channelId    String?
+  assetId      String?
+  type         String // frontify | sharepoint | looker_studio | other
+  url          String
+  label        String?
+  thumbnailUrl String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  campaign Campaign? @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  channel  Channel?  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  asset    Asset?    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId])
+  @@index([channelId])
+  @@index([assetId])
+}
+
+/// Uploaded external KPI report (Excel/CSV). The original file lives in the
+/// storage layer under `storageKey`.
+model KpiReport {
+  id               String   @id @default(cuid())
+  campaignId       String
+  channelId        String?
+  source           String // agency / partner
+  periodStart      DateTime
+  periodEnd        DateTime
+  originalFileName String
+  storageKey       String
+  uploadedById     String?
+  uploadedAt       DateTime @default(now())
+
+  campaign   Campaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  channel    Channel?   @relation(fields: [channelId], references: [id], onDelete: SetNull)
+  uploadedBy User?      @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  values     KpiValue[]
+
+  @@index([campaignId])
+}
+
+model KpiValue {
+  id        String    @id @default(cuid())
+  reportId  String
+  channelId String?
+  kpiName   String
+  value     Float
+  unit      String?
+  date      DateTime?
+
+  report  KpiReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  channel Channel?  @relation(fields: [channelId], references: [id], onDelete: SetNull)
+
+  @@index([reportId])
+  @@index([channelId, kpiName])
+}
+
+/// Column mapping for recurring reports of one source, so uploads can be
+/// recognised automatically.
+model KpiImportMapping {
+  id        String   @id @default(cuid())
+  source    String   @unique
+  mapping   Json // column name -> target field
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Comment on any object (campaign, channel, asset, ...).
+model Comment {
+  id         String   @id @default(cuid())
+  entityType String // see ENTITY_TYPES
+  entityId   String
+  authorId   String
+  body       String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  author User @relation(fields: [authorId], references: [id])
+
+  @@index([entityType, entityId])
+}
+
+/// Who changed what and when (status changes, uploads, charter changes, ...).
+model ActivityLog {
+  id         String   @id @default(cuid())
+  entityType String
+  entityId   String
+  action     String // e.g. "created", "status_changed", "charter_updated"
+  details    Json? // e.g. { "from": "BRIEFING", "to": "IN_PRODUKTION" }
+  userId     String?
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}

@@ -1,26 +1,148 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
+/* Dark mode follows the OS setting; `.light` / `.dark` on <html> force a theme. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Design tokens.
+ * - Josera CI (gold, ruby) is used for UI accents only.
+ * - Traffic light colours are deliberately separate from the CI palette:
+ *   ruby is never used to signal an error/overdue state.
+ * - Each funnel stage has its own calm colour, used consistently everywhere.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  /* Josera CI */
+  --josera-gold: #fecc00;
+  --josera-ruby: #e2001a;
+  --josera-black: #000000;
+  --josera-white: #ffffff;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* shadcn/ui base tokens */
+  --radius: 0.625rem;
+  --background: #ffffff;
+  --foreground: #111111;
+  --card: #ffffff;
+  --card-foreground: #111111;
+  --popover: #ffffff;
+  --popover-foreground: #111111;
+  --primary: #111111;
+  --primary-foreground: #ffffff;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #111111;
+  --muted: #f4f4f5;
+  --muted-foreground: #5f5f66;
+  --accent: var(--josera-gold);
+  --accent-foreground: #000000;
+  --destructive: #c92a2a;
+  --border: #e4e4e7;
+  --input: #e4e4e7;
+  --ring: #b38f00;
+
+  /* Traffic light */
+  --status-red: #c92a2a;
+  --status-yellow: #e67700;
+  --status-green: #2b8a3e;
+
+  /* Funnel stages */
+  --stage-awareness: #4c6ef5;
+  --stage-consideration: #12867a;
+  --stage-sales: #7950c2;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  :root:not(.light) {
+    --background: #0e0e10;
+    --foreground: #ededef;
+    --card: #18181b;
+    --card-foreground: #ededef;
+    --popover: #18181b;
+    --popover-foreground: #ededef;
+    --primary: #ededef;
+    --primary-foreground: #0e0e10;
+    --secondary: #26262b;
+    --secondary-foreground: #ededef;
+    --muted: #26262b;
+    --muted-foreground: #a1a1aa;
+    --border: #2e2e33;
+    --input: #2e2e33;
+    --ring: var(--josera-gold);
+    --status-red: #ff6b6b;
+    --status-yellow: #ffa94d;
+    --status-green: #51cf66;
+    --stage-awareness: #748ffc;
+    --stage-consideration: #38c3b1;
+    --stage-sales: #a685e2;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.dark {
+  --background: #0e0e10;
+  --foreground: #ededef;
+  --card: #18181b;
+  --card-foreground: #ededef;
+  --popover: #18181b;
+  --popover-foreground: #ededef;
+  --primary: #ededef;
+  --primary-foreground: #0e0e10;
+  --secondary: #26262b;
+  --secondary-foreground: #ededef;
+  --muted: #26262b;
+  --muted-foreground: #a1a1aa;
+  --border: #2e2e33;
+  --input: #2e2e33;
+  --ring: var(--josera-gold);
+  --status-red: #ff6b6b;
+  --status-yellow: #ffa94d;
+  --status-green: #51cf66;
+  --stage-awareness: #748ffc;
+  --stage-consideration: #38c3b1;
+  --stage-sales: #a685e2;
+}
+
+@theme inline {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-josera-gold: var(--josera-gold);
+  --color-josera-ruby: var(--josera-ruby);
+
+  --color-status-red: var(--status-red);
+  --color-status-yellow: var(--status-yellow);
+  --color-status-green: var(--status-green);
+
+  --color-stage-awareness: var(--stage-awareness);
+  --color-stage-consideration: var(--stage-consideration);
+  --color-stage-sales: var(--stage-sales);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
 }
