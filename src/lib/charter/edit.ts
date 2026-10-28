@@ -1,5 +1,5 @@
 import { emptyCharterForm, type CharterFormValues } from "@/lib/charter/form";
-import { formatGermanNumber, toDateInput } from "@/lib/format";
+import { formatNumber, toDateInput } from "@/lib/format";
 import { FUNNEL_STAGES } from "@/lib/domain/enums";
 import { launchCharterDataSchema, parseStringList } from "@/lib/validation";
 
@@ -18,10 +18,10 @@ interface CampaignForEdit {
   charter: { data: unknown } | null;
 }
 
-const centsToInput = (cents: number | null | undefined) => (cents == null ? "" : formatGermanNumber(cents / 100));
+const centsToInput = (cents: number | null | undefined) => (cents == null ? "" : formatNumber(cents / 100));
 
 /**
- * Pre-fills the wizard for editing an existing charter. Basis values come from
+ * Pre-fills the wizard for editing an existing charter. Basics come from
  * the campaign columns (source of truth), the rest from the charter document.
  * Channels and assets are not part of charter editing.
  */

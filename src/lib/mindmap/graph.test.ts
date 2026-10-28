@@ -32,7 +32,7 @@ const campaign: MindmapCampaign = {
       channelType: { name: "TV/CTV" },
       owner: { name: "Anna" },
       kpiTargets: { Impressions: 1, Reach: 2 },
-      assets: [asset("a1", "FERTIG"), asset("a2", "BRIEFING", "2026-10-20"), asset("a3", "IDEE")],
+      assets: [asset("a1", "DONE"), asset("a2", "BRIEFING", "2026-10-20"), asset("a3", "IDEA")],
     },
     {
       id: "social",
@@ -93,7 +93,7 @@ describe("buildMindmap", () => {
       childCount: 2,
     });
     expect(nodes[stageNodeId("CONSIDERATION")].data).toMatchObject({ trafficLight: "GREEN", childCount: 0 });
-    expect(nodes[CAMPAIGN_NODE_ID].data).toMatchObject({ trafficLight: "RED", overdueCount: 1, phase: "IN_ARBEIT" });
+    expect(nodes[CAMPAIGN_NODE_ID].data).toMatchObject({ trafficLight: "RED", overdueCount: 1, phase: "IN_PROGRESS" });
     expect(nodes[assetNodeId("a2")].data).toMatchObject({ overdue: true, dueSoon: false });
     expect(nodes[assetNodeId("a4")].data).toMatchObject({ overdue: false, dueSoon: true });
   });

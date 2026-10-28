@@ -1,21 +1,28 @@
 import { describe, expect, it } from "vitest";
-import { euroToCents, parseDateInput, parseGermanNumber, slugify, toDateInput } from "@/lib/format";
+import { euroToCents, formatNumber, parseDateInput, parseNumberInput, slugify, toDateInput } from "@/lib/format";
 
-describe("parseGermanNumber", () => {
+describe("parseNumberInput", () => {
   it.each([
     ["1500", 1500],
-    ["12.345,50", 12345.5],
-    ["0,5", 0.5],
-    ["1.000.000", 1_000_000],
-    [" 250.000 € ", 250_000],
+    ["12,345.50", 12345.5],
+    ["0.5", 0.5],
+    ["1,000,000", 1_000_000],
+    [" €250,000 ", 250_000],
     ["70 %", 70],
-    ["-3,2", -3.2],
+    ["-3.2", -3.2],
   ])("parses %j", (input, expected) => {
-    expect(parseGermanNumber(input)).toBe(expected);
+    expect(parseNumberInput(input)).toBe(expected);
   });
 
-  it.each(["", "abc", "1,2,3", "12.34", "1.2345", ","])("rejects %j", (input) => {
-    expect(parseGermanNumber(input)).toBeNull();
+  it.each(["", "abc", "1.2.3", "12,34", "1,2345", "."])("rejects %j", (input) => {
+    expect(parseNumberInput(input)).toBeNull();
+  });
+});
+
+describe("formatNumber", () => {
+  it("formats in the app locale", () => {
+    expect(formatNumber(12345.5)).toBe("12,345.5");
+    expect(formatNumber(null)).toBe("");
   });
 });
 

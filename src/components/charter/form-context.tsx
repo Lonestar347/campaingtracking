@@ -116,7 +116,7 @@ export function SelectField({
   hint,
   required,
   className,
-  placeholder = "Bitte wählen",
+  placeholder = "Please select",
   options,
 }: BoundFieldProps & { placeholder?: string; options: readonly { value: string; label: string }[] }) {
   const { values, errors, set } = useCharterForm();

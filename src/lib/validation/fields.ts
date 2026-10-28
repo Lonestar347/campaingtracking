@@ -1,8 +1,8 @@
 // Reusable Zod field schemas for form input (strings as typed by the user ->
-// parsed values), with German error messages.
+// parsed values), with user-facing error messages.
 
 import { z } from "zod";
-import { euroToCents, parseDateInput, parseGermanNumber } from "@/lib/format";
+import { euroToCents, parseDateInput, parseNumberInput } from "@/lib/format";
 
 export const optionalText = z
   .string()
@@ -20,25 +20,25 @@ export const optionalId = z
 export function dateField(required: boolean) {
   return z.string().transform((value, ctx): Date | undefined => {
     if (value.trim() === "") {
-      if (required) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Datum angeben" });
+      if (required) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Enter a date" });
       return undefined;
     }
     const date = parseDateInput(value.trim());
-    if (!date) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Ungültiges Datum" });
+    if (!date) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Invalid date" });
     return date ?? undefined;
   });
 }
 
-/** Euro amount typed in German format -> cents. */
+/** Euro amount as typed by the user -> cents. */
 export const moneyField = z.string().transform((value, ctx): number | undefined => {
   if (value.trim() === "") return undefined;
-  const euro = parseGermanNumber(value);
+  const euro = parseNumberInput(value);
   if (euro == null) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Ungültiger Betrag, z. B. 25.000 oder 1.500,50" });
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Invalid amount, e.g. 25,000 or 1,500.50" });
     return undefined;
   }
   if (euro < 0) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Betrag darf nicht negativ sein" });
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Amount must not be negative" });
     return undefined;
   }
   return euroToCents(euro);
@@ -55,7 +55,7 @@ export const urlField = z
     } catch {
       // fall through
     }
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Vollständige URL angeben (https://…)" });
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Enter a full URL (https://…)" });
     return undefined;
   });
 
@@ -67,11 +67,11 @@ export interface KpiFormValues {
 
 export const kpiRowSchema = z.object({
   clientId: z.string(),
-  name: requiredText("KPI-Namen angeben"),
+  name: requiredText("Enter a KPI name"),
   target: z.string().transform((value, ctx): number => {
-    const parsed = parseGermanNumber(value);
+    const parsed = parseNumberInput(value);
     if (parsed == null) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Zielwert als Zahl angeben" });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Enter the target as a number" });
       return 0;
     }
     return parsed;
@@ -84,7 +84,7 @@ export const kpiRowsSchema = z.array(kpiRowSchema).superRefine((kpis, ctx) => {
   kpis.forEach((kpi, index) => {
     const key = kpi.name.toLowerCase();
     if (seen.has(key)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: [index, "name"], message: "KPI doppelt" });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: [index, "name"], message: "Duplicate KPI" });
     }
     seen.add(key);
   });
@@ -98,7 +98,7 @@ export function checkDateOrder(
   endPath: (string | number)[],
 ) {
   if (start && end && end < start) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, path: endPath, message: "Ende liegt vor dem Start" });
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: endPath, message: "End is before start" });
   }
 }
 

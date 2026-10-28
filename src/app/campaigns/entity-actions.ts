@@ -24,11 +24,11 @@ export type EntityActionResult =
   | { ok: true; id: string }
   | { ok: false; fieldErrors?: FieldErrors; formError?: string };
 
-const notFound = (what: string): EntityActionResult => ({ ok: false, formError: `${what} nicht gefunden.` });
+const notFound = (what: string): EntityActionResult => ({ ok: false, formError: `${what} not found.` });
 
 function revalidateCampaign(slug: string) {
   revalidatePath("/");
-  revalidatePath(`/kampagnen/${slug}`, "layout");
+  revalidatePath(`/campaigns/${slug}`, "layout");
 }
 
 /** Checks that referenced users exist; returns field errors for unknown ids. */
@@ -39,7 +39,7 @@ async function checkUsers(fields: Record<string, string | null | undefined>): Pr
   return Object.fromEntries(
     Object.entries(fields)
       .filter(([, id]) => id && !known.has(id))
-      .map(([field]) => [field, "Unbekannte Person"]),
+      .map(([field]) => [field, "Unknown person"]),
   );
 }
 
@@ -61,9 +61,9 @@ export async function createChannel(campaignId: string, values: ChannelEditValue
   if (!result.success) return { ok: false, fieldErrors: result.errors };
 
   const campaign = await db.campaign.findUnique({ where: { id: campaignId }, select: { slug: true } });
-  if (!campaign) return notFound("Kampagne");
+  if (!campaign) return notFound("Campaign");
   const type = await db.channelType.findUnique({ where: { id: result.data.channelTypeId }, select: { id: true } });
-  if (!type) return { ok: false, fieldErrors: { channelTypeId: "Unbekannter Kanaltyp" } };
+  if (!type) return { ok: false, fieldErrors: { channelTypeId: "Unknown channel type" } };
   const userErrors = await checkUsers({ ownerId: result.data.ownerId });
   if (Object.keys(userErrors).length > 0) return { ok: false, fieldErrors: userErrors };
 
@@ -95,7 +95,7 @@ export async function updateChannel(channelId: string, values: ChannelEditValues
   if (!result.success) return { ok: false, fieldErrors: result.errors };
 
   const channel = await db.channel.findUnique({ where: { id: channelId }, include: { campaign: { select: { slug: true } } } });
-  if (!channel) return notFound("Kanal");
+  if (!channel) return notFound("Channel");
   const userErrors = await checkUsers({ ownerId: result.data.ownerId });
   if (Object.keys(userErrors).length > 0) return { ok: false, fieldErrors: userErrors };
 
@@ -127,7 +127,7 @@ export async function deleteChannel(channelId: string): Promise<EntityActionResu
     where: { id: channelId },
     include: { campaign: { select: { id: true, slug: true } }, _count: { select: { assets: true } } },
   });
-  if (!channel) return notFound("Kanal");
+  if (!channel) return notFound("Channel");
 
   await db.$transaction(async (tx) => {
     await tx.channel.delete({ where: { id: channelId } });
@@ -155,7 +155,7 @@ export async function createAsset(channelId: string, values: AssetEditValues): P
   if (!result.success) return { ok: false, fieldErrors: result.errors };
 
   const channel = await db.channel.findUnique({ where: { id: channelId }, include: { campaign: { select: { slug: true } } } });
-  if (!channel) return notFound("Kanal");
+  if (!channel) return notFound("Channel");
   const userErrors = await checkUsers({ ownerId: result.data.ownerId, approverId: result.data.approverId });
   if (Object.keys(userErrors).length > 0) return { ok: false, fieldErrors: userErrors };
 
@@ -237,7 +237,7 @@ export async function updateAsset(assetId: string, values: AssetEditValues): Pro
 export async function setAssetStatus(assetId: string, status: AssetStatus): Promise<EntityActionResult> {
   const auth = await requirePermission("write");
   if (!auth.user) return { ok: false, formError: auth.error };
-  if (!(ASSET_STATUSES as readonly string[]).includes(status)) return { ok: false, formError: "Unbekannter Status." };
+  if (!(ASSET_STATUSES as readonly string[]).includes(status)) return { ok: false, formError: "Unknown status." };
 
   return applyAssetUpdate(assetId, () => ({ status }), auth.user.id);
 }

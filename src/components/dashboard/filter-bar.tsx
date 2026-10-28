@@ -32,12 +32,12 @@ interface Props {
   options: { brands: string[]; productLines: string[]; owners: { id: string; name: string }[] };
 }
 
-const LIGHT_LABELS = { RED: "Kritisch", YELLOW: "Achtung", GREEN: "Im Plan" } as const;
+const LIGHT_LABELS = { RED: "Critical", YELLOW: "At risk", GREEN: "On track" } as const;
 const LIGHT_DOT = { RED: "bg-status-red", YELLOW: "bg-status-yellow", GREEN: "bg-status-green" } as const;
 const SORT_LABELS: Record<DashboardSort, string> = {
-  start: "Startdatum",
-  ende: "Enddatum",
-  ampel: "Dringlichkeit",
+  start: "Start date",
+  end: "End date",
+  urgency: "Urgency",
   name: "Name",
 };
 
@@ -111,14 +111,14 @@ export function FilterBar({ filters, sort, options }: Props) {
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Kampagne, Marke oder Produktlinie suchen"
-            aria-label="Suche"
+            placeholder="Search campaign, brand or product line"
+            aria-label="Search"
             className="pl-8"
           />
         </div>
         <div className="flex items-center gap-2">
           <Label htmlFor="sort" className="text-muted-foreground">
-            Sortierung
+            Sort by
           </Label>
           <Select
             id="sort"
@@ -133,7 +133,7 @@ export function FilterBar({ filters, sort, options }: Props) {
             ))}
           </Select>
         </div>
-        {pending && <Loader2 className="size-4 animate-spin text-muted-foreground" aria-label="Wird aktualisiert" />}
+        {pending && <Loader2 className="size-4 animate-spin text-muted-foreground" aria-label="Updating" />}
         {active > 0 && (
           <Button
             variant="ghost"
@@ -141,17 +141,17 @@ export function FilterBar({ filters, sort, options }: Props) {
             onClick={() => {
               setQuery("");
               startTransition(() =>
-                router.replace(sort === "start" ? pathname : `${pathname}?sortierung=${sort}`, { scroll: false }),
+                router.replace(sort === "start" ? pathname : `${pathname}?sort=${sort}`, { scroll: false }),
               );
             }}
           >
-            <X /> Filter zurücksetzen ({active})
+            <X /> Reset filters ({active})
           </Button>
         )}
       </div>
 
       <div className="flex flex-wrap gap-x-6 gap-y-2">
-        <ChipGroup label="Markt">
+        <ChipGroup label="Market">
           {MARKETS.map((m) => (
             <Chip key={m} active={filters.markets.includes(m)} onClick={() => apply({ markets: toggle(filters.markets, m) })}>
               {m}
@@ -165,7 +165,7 @@ export function FilterBar({ filters, sort, options }: Props) {
             </Chip>
           ))}
         </ChipGroup>
-        <ChipGroup label="Ampel">
+        <ChipGroup label="Status">
           {TRAFFIC_LIGHTS.map((l) => (
             <Chip key={l} active={filters.lights.includes(l)} onClick={() => apply({ lights: toggle(filters.lights, l) })}>
               <span className={cn("size-2 rounded-full", LIGHT_DOT[l])} aria-hidden />
@@ -178,14 +178,14 @@ export function FilterBar({ filters, sort, options }: Props) {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
         <FilterSelect
           id="f-brand"
-          label="Marke"
+          label="Brand"
           value={filters.brand ?? ""}
           onChange={(v) => apply({ brand: v || undefined })}
           options={options.brands.map((b) => ({ value: b, label: b }))}
         />
         <FilterSelect
           id="f-product"
-          label="Produktlinie"
+          label="Product line"
           value={filters.productLine ?? ""}
           onChange={(v) => apply({ productLine: v || undefined })}
           options={options.productLines.map((p) => ({ value: p, label: p }))}
@@ -199,13 +199,13 @@ export function FilterBar({ filters, sort, options }: Props) {
         />
         <FilterSelect
           id="f-exec"
-          label="Umsetzung"
+          label="Execution"
           value={filters.executionTypes[0] ?? ""}
           onChange={(v) => apply({ executionTypes: v ? [v as ExecutionType] : [] })}
           options={EXECUTION_TYPES.map((t) => ({ value: t, label: EXECUTION_TYPE_LABELS[t] }))}
         />
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="f-from">Zeitraum von</Label>
+          <Label htmlFor="f-from">Period from</Label>
           <Input
             id="f-from"
             type="date"
@@ -214,7 +214,7 @@ export function FilterBar({ filters, sort, options }: Props) {
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="f-to">bis</Label>
+          <Label htmlFor="f-to">to</Label>
           <Input
             id="f-to"
             type="date"
@@ -244,7 +244,7 @@ function FilterSelect({
     <div className="flex flex-col gap-1.5">
       <Label htmlFor={id}>{label}</Label>
       <Select id={id} value={value} onChange={(e) => onChange(e.target.value)}>
-        <option value="">Alle</option>
+        <option value="">All</option>
         {options.map((o) => (
           <option key={o.value} value={o.value}>
             {o.label}

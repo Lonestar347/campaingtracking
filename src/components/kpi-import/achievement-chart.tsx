@@ -13,7 +13,7 @@ import {
   type TooltipProps,
 } from "recharts";
 import { FUNNEL_STAGES, FUNNEL_STAGE_LABELS, type FunnelStage } from "@/lib/domain/enums";
-import { formatGermanNumber } from "@/lib/format";
+import { formatNumber } from "@/lib/format";
 
 export interface AchievementRow {
   id: string;
@@ -60,14 +60,14 @@ function ChartTooltip({ active, payload }: TooltipProps<number, string>) {
         {row.channelName} · {FUNNEL_STAGE_LABELS[row.stage]}
       </p>
       <dl className="grid grid-cols-[auto_auto] gap-x-3 gap-y-0.5 tabular-nums">
-        <dt className="text-muted-foreground">Ziel</dt>
-        <dd className="text-right text-foreground">{formatGermanNumber(row.target)}</dd>
-        <dt className="text-muted-foreground">Ist{row.aggregation === "avg" ? " (Ø)" : ""}</dt>
-        <dd className="text-right text-foreground">{formatGermanNumber(row.actual)}</dd>
-        <dt className="text-muted-foreground">Zielerreichung</dt>
-        <dd className="text-right font-semibold text-foreground">{formatGermanNumber(row.percent, 0)} %</dd>
+        <dt className="text-muted-foreground">Target</dt>
+        <dd className="text-right text-foreground">{formatNumber(row.target)}</dd>
+        <dt className="text-muted-foreground">Actual{row.aggregation === "avg" ? " (avg.)" : ""}</dt>
+        <dd className="text-right text-foreground">{formatNumber(row.actual)}</dd>
+        <dt className="text-muted-foreground">Achievement</dt>
+        <dd className="text-right font-semibold text-foreground">{formatNumber(row.percent, 0)} %</dd>
       </dl>
-      {row.lowerIsBetter && <p className="mt-1.5 text-muted-foreground">Kosten-KPI: niedriger ist besser</p>}
+      {row.lowerIsBetter && <p className="mt-1.5 text-muted-foreground">Cost KPI: lower is better</p>}
     </div>
   );
 }
@@ -111,7 +111,7 @@ export function AchievementChart({ rows }: { rows: AchievementRow[] }) {
               x={100}
               stroke="var(--foreground)"
               strokeDasharray="4 3"
-              label={{ value: "Ziel", position: "top", fill: "var(--muted-foreground)", fontSize: 11 }}
+              label={{ value: "Target", position: "top", fill: "var(--muted-foreground)", fontSize: 11 }}
             />
             <Bar dataKey="bar" radius={[0, 4, 4, 0]} maxBarSize={18} isAnimationActive={false}>
               {data.map((row) => (

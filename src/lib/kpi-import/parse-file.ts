@@ -21,17 +21,17 @@ export function extensionOf(fileName: string): string {
   return match ? match[0] : "";
 }
 
-/** Checks name and size before parsing; throws UploadError with a German message. */
+/** Checks name and size before parsing; throws UploadError with a user-facing message. */
 export function checkUpload(fileName: string, size: number) {
   const ext = extensionOf(fileName);
   if (ext === ".xls") {
-    throw new UploadError("Alte .xls-Dateien werden nicht unterstützt. Bitte in Excel als .xlsx speichern.");
+    throw new UploadError("Legacy .xls files are not supported. Please save the file as .xlsx in Excel.");
   }
   if (!(ACCEPTED_EXTENSIONS as readonly string[]).includes(ext)) {
-    throw new UploadError("Bitte eine Excel- (.xlsx) oder CSV-Datei hochladen.");
+    throw new UploadError("Please upload an Excel (.xlsx) or CSV file.");
   }
-  if (size === 0) throw new UploadError("Die Datei ist leer.");
-  if (size > MAX_UPLOAD_BYTES) throw new UploadError("Die Datei ist größer als 10 MB.");
+  if (size === 0) throw new UploadError("The file is empty.");
+  if (size > MAX_UPLOAD_BYTES) throw new UploadError("The file is larger than 10 MB.");
 }
 
 export async function parseUpload(buffer: Buffer, fileName: string): Promise<ParsedSheet[]> {
@@ -39,17 +39,17 @@ export async function parseUpload(buffer: Buffer, fileName: string): Promise<Par
   try {
     const sheets = ext === ".csv" ? [parseCsv(buffer, fileName)] : await parseXlsx(buffer);
     const nonEmpty = sheets.filter((s) => s.rows.some((r) => r.some((c) => c != null && c !== "")));
-    if (nonEmpty.length === 0) throw new UploadError("Die Datei enthält keine Daten.");
+    if (nonEmpty.length === 0) throw new UploadError("The file contains no data.");
     if (nonEmpty.some((s) => s.rows.length > MAX_ROWS)) {
-      throw new UploadError(`Zu viele Zeilen (maximal ${MAX_ROWS.toLocaleString("de-DE")} pro Tabellenblatt).`);
+      throw new UploadError(`Too many rows (maximum ${MAX_ROWS.toLocaleString("en-GB")} per sheet).`);
     }
     return nonEmpty;
   } catch (error) {
     if (error instanceof UploadError) throw error;
     throw new UploadError(
       ext === ".csv"
-        ? "Die CSV-Datei konnte nicht gelesen werden."
-        : "Die Excel-Datei konnte nicht gelesen werden. Ist sie beschädigt oder passwortgeschützt?",
+        ? "The CSV file could not be read."
+        : "The Excel file could not be read. Is it damaged or password-protected?",
     );
   }
 }
@@ -67,7 +67,7 @@ function parseCsv(buffer: Buffer, fileName: string): ParsedSheet {
     skipEmptyLines: false,
   });
   if (result.errors.some((e) => e.type === "Delimiter" && result.data.length > 1 && result.data[0].length > 1)) {
-    throw new UploadError("Das Trennzeichen der CSV-Datei wurde nicht erkannt.");
+    throw new UploadError("The CSV delimiter could not be detected.");
   }
   return {
     name: fileName.replace(/\.csv$/i, ""),

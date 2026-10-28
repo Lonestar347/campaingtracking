@@ -62,7 +62,7 @@ export function CompareToggle({ slug, name }: CompareItem) {
         "relative z-10 inline-flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground",
         full && "cursor-not-allowed opacity-50",
       )}
-      title={full ? `Maximal ${MAX_COMPARE} Kampagnen vergleichen` : undefined}
+      title={full ? `Compare up to ${MAX_COMPARE} campaigns` : undefined}
     >
       <input
         type="checkbox"
@@ -71,7 +71,7 @@ export function CompareToggle({ slug, name }: CompareItem) {
         disabled={full}
         onChange={() => toggle({ slug, name })}
       />
-      Vergleichen
+      Compare
     </label>
   );
 }
@@ -79,22 +79,22 @@ export function CompareToggle({ slug, name }: CompareItem) {
 function CompareBar() {
   const { selected, clear, toggle } = useCompare();
   if (selected.length === 0) return null;
-  const href = `/vergleich?k=${selected.map((s) => encodeURIComponent(s.slug)).join(",")}`;
+  const href = `/compare?c=${selected.map((s) => encodeURIComponent(s.slug)).join(",")}`;
 
   return (
     <div className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-4 print:hidden">
       <div
         role="region"
-        aria-label="Vergleichsauswahl"
+        aria-label="Comparison selection"
         className="flex max-w-full flex-wrap items-center gap-2 rounded-xl border bg-card px-4 py-2.5 shadow-lg"
       >
         <span className="text-sm font-medium">
-          {selected.length}/{MAX_COMPARE} ausgewählt:
+          {selected.length}/{MAX_COMPARE} selected:
         </span>
         {selected.map((s) => (
           <span key={s.slug} className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-sm">
             {s.name}
-            <button type="button" aria-label={`${s.name} entfernen`} onClick={() => toggle(s)} className="hover:text-foreground">
+            <button type="button" aria-label={`Remove ${s.name}`} onClick={() => toggle(s)} className="hover:text-foreground">
               <X className="size-3.5" />
             </button>
           </span>
@@ -107,10 +107,10 @@ function CompareBar() {
             selected.length < 2 && "pointer-events-none opacity-50",
           )}
         >
-          <Columns3 /> Vergleichen
+          <Columns3 /> Compare
         </Link>
         <Button size="sm" variant="ghost" onClick={clear}>
-          Auswahl aufheben
+          Clear selection
         </Button>
       </div>
     </div>

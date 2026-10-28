@@ -4,7 +4,7 @@ import { Pencil } from "lucide-react";
 import { can, getCurrentUser } from "@/lib/auth";
 import { getCampaignBySlug } from "@/lib/queries";
 import { formatDate, formatDateRange, formatEuroCents } from "@/lib/dates";
-import { formatGermanNumber } from "@/lib/format";
+import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import {
   EXECUTION_TYPE_LABELS,
@@ -78,19 +78,19 @@ export default async function CharterPage({ params }: { params: Promise<{ slug: 
       <article className="rounded-xl border bg-card p-6 shadow-sm print:border-0 print:p-0 print:shadow-none">
         <header className="mb-6 flex flex-wrap items-start gap-3">
           <div className="flex-1">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Launch Charter</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Launch charter</p>
             <h2 className="text-xl font-semibold">{campaign.name}</h2>
             {charter && (
               <p className="text-sm text-muted-foreground">
-                Version {charter.currentVersion} · Stand {formatDate(charter.updatedAt)}
+                Version {charter.currentVersion} · as of {formatDate(charter.updatedAt)}
               </p>
             )}
           </div>
           <div className="flex gap-2 print:hidden">
             <PrintButton />
             {canEdit && (
-              <Link href={`/kampagnen/${slug}/charter/bearbeiten`} className={buttonVariants({ size: "sm" })}>
-                <Pencil /> Bearbeiten
+              <Link href={`/campaigns/${slug}/charter/edit`} className={buttonVariants({ size: "sm" })}>
+                <Pencil /> Edit
               </Link>
             )}
           </div>
@@ -98,32 +98,32 @@ export default async function CharterPage({ params }: { params: Promise<{ slug: 
 
         {!data && (
           <p className="mb-6 rounded-lg border border-status-yellow p-3 text-sm">
-            Für diese Kampagne liegt keine vollständige Charter vor.
-            {canEdit && " Über „Bearbeiten“ lässt sie sich ergänzen."}
+            This campaign has no complete charter.
+            {canEdit && " It can be completed via “Edit”."}
           </p>
         )}
 
-        <Section number={1} title="Basis">
+        <Section number={1} title="Basics">
           <Rows
             rows={[
-              ["Kampagne", campaign.name],
-              ["Beschreibung", campaign.description],
-              ["Marke / Produktlinie", [campaign.brand, campaign.productLine].filter(Boolean).join(" / ")],
-              ["Märkte", parseStringList(campaign.markets).join(", ")],
-              ["Zeitraum", formatDateRange(campaign.startDate, campaign.endDate)],
+              ["Campaign", campaign.name],
+              ["Description", campaign.description],
+              ["Brand / product line", [campaign.brand, campaign.productLine].filter(Boolean).join(" / ")],
+              ["Markets", parseStringList(campaign.markets).join(", ")],
+              ["Period", formatDateRange(campaign.startDate, campaign.endDate)],
               ["Owner", campaign.owner.name],
-              ["Umsetzung", EXECUTION_TYPE_LABELS[campaign.executionType as ExecutionType] ?? campaign.executionType],
-              ["Partner", partners.join("\n")],
+              ["Execution", EXECUTION_TYPE_LABELS[campaign.executionType as ExecutionType] ?? campaign.executionType],
+              ["Partners", partners.join("\n")],
             ]}
           />
         </Section>
 
-        <Section number={2} title="Strategie">
+        <Section number={2} title="Strategy">
           <Rows
             rows={[
-              ["Ziel / Objective", data?.strategy.objective],
-              ["Zielgruppe", data?.strategy.targetAudience],
-              ["Kernbotschaft", data?.strategy.keyMessage],
+              ["Objective", data?.strategy.objective],
+              ["Target audience", data?.strategy.targetAudience],
+              ["Key message", data?.strategy.keyMessage],
               ["Insight", data?.strategy.insight],
               ["Reason to Believe", data?.strategy.reasonToBelieve],
             ]}
@@ -133,7 +133,7 @@ export default async function CharterPage({ params }: { params: Promise<{ slug: 
         <Section number={3} title="Budget">
           <Rows
             rows={[
-              ["Gesamtbudget", formatEuroCents(campaign.budgetCents)],
+              ["Total budget", formatEuroCents(campaign.budgetCents)],
               ...FUNNEL_STAGES.filter((s) => data?.budget.byFunnelStageCents?.[s] != null).map(
                 (s) => [FUNNEL_STAGE_LABELS[s], formatEuroCents(data!.budget.byFunnelStageCents![s])] as [string, string],
               ),
@@ -141,10 +141,10 @@ export default async function CharterPage({ params }: { params: Promise<{ slug: 
           />
         </Section>
 
-        <Section number={4} title="Kanäle & KPI-Ziele">
-          <p className="mb-3 text-xs text-muted-foreground">Aktueller Stand der Kampagne.</p>
+        <Section number={4} title="Channels & KPI targets">
+          <p className="mb-3 text-xs text-muted-foreground">Current state of the campaign.</p>
           {campaign.channels.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Keine Kanäle.</p>
+            <p className="text-sm text-muted-foreground">No channels.</p>
           ) : (
             <div className="grid gap-4 md:grid-cols-3 print:grid-cols-3">
               {FUNNEL_STAGES.map((stage) => (
@@ -162,7 +162,7 @@ export default async function CharterPage({ params }: { params: Promise<{ slug: 
                             <span className="font-medium">{c.name}</span>
                             {kpis.length > 0 && (
                               <span className="block text-xs text-muted-foreground">
-                                {kpis.map(([k, v]) => `${k}: ${formatGermanNumber(v)}`).join(" · ")}
+                                {kpis.map(([k, v]) => `${k}: ${formatNumber(v)}`).join(" · ")}
                               </span>
                             )}
                           </li>
@@ -177,7 +177,7 @@ export default async function CharterPage({ params }: { params: Promise<{ slug: 
 
         <Section number={5} title="Assets">
           {campaign.channels.every((c) => c.assets.length === 0) ? (
-            <p className="text-sm text-muted-foreground">Keine Assets.</p>
+            <p className="text-sm text-muted-foreground">No assets.</p>
           ) : (
             <ul className="space-y-1 text-sm">
               {campaign.channels
@@ -195,14 +195,14 @@ export default async function CharterPage({ params }: { params: Promise<{ slug: 
         <Section number={6} title="Links">
           <Rows
             rows={[
-              ["Frontify-Ordner", <ExternalUrl key="f" url={data?.links.frontify} />],
-              ["SharePoint-Ordner", <ExternalUrl key="s" url={data?.links.sharepoint} />],
-              ["Looker-Studio-Report", <ExternalUrl key="l" url={data?.links.lookerStudio} />],
+              ["Frontify folder", <ExternalUrl key="f" url={data?.links.frontify} />],
+              ["SharePoint folder", <ExternalUrl key="s" url={data?.links.sharepoint} />],
+              ["Looker Studio report", <ExternalUrl key="l" url={data?.links.lookerStudio} />],
             ]}
           />
         </Section>
 
-        <Section number={7} title="Stakeholder & Freigabe">
+        <Section number={7} title="Stakeholders & approval">
           {data && data.stakeholders.length > 0 ? (
             <ul className="mb-4 space-y-1 text-sm">
               {data.stakeholders.map((s, i) => (
@@ -214,16 +214,16 @@ export default async function CharterPage({ params }: { params: Promise<{ slug: 
               ))}
             </ul>
           ) : (
-            <p className="mb-4 text-sm text-muted-foreground">Keine Stakeholder eingetragen.</p>
+            <p className="mb-4 text-sm text-muted-foreground">No stakeholders added.</p>
           )}
-          <Rows rows={[["Freigabeprozess", data?.approvalProcess]]} />
+          <Rows rows={[["Approval process", data?.approvalProcess]]} />
         </Section>
       </article>
 
       <aside className="print:hidden">
-        <h2 className="mb-3 text-sm font-semibold">Versionen</h2>
+        <h2 className="mb-3 text-sm font-semibold">Versions</h2>
         {versions.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Noch keine Versionen.</p>
+          <p className="text-sm text-muted-foreground">No versions yet.</p>
         ) : (
           <ol className="space-y-3">
             {versions.map((v, index) => {
@@ -237,10 +237,10 @@ export default async function CharterPage({ params }: { params: Promise<{ slug: 
                     <span className="font-semibold">Version {v.version}</span>
                     <span className="text-xs text-muted-foreground">{formatDate(v.createdAt)}</span>
                   </div>
-                  <p className="text-xs text-muted-foreground">{v.createdBy?.name ?? "Unbekannt"}</p>
+                  <p className="text-xs text-muted-foreground">{v.createdBy?.name ?? "Unknown"}</p>
                   {v.changeNote && <p className="mt-1.5">{v.changeNote}</p>}
                   {changed.length > 0 && (
-                    <p className="mt-1.5 text-xs text-muted-foreground">Geändert: {changed.join(", ")}</p>
+                    <p className="mt-1.5 text-xs text-muted-foreground">Changed: {changed.join(", ")}</p>
                   )}
                 </li>
               );

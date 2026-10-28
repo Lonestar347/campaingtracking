@@ -15,7 +15,7 @@ import {
 } from "@/components/status-badges";
 import { STAGE_STYLES } from "@/components/stage-styles";
 
-export const metadata = { title: "Kampagnen vergleichen · Kampagnen-Tracker" };
+export const metadata = { title: "Compare campaigns · Campaign Tracker" };
 export const dynamic = "force-dynamic";
 
 const BAR_COLORS = ["bg-foreground/70", "bg-josera-gold", "bg-stage-awareness", "bg-stage-sales"];
@@ -41,9 +41,9 @@ export default async function ComparePage({
     return (
       <div className="space-y-4">
         {back}
-        <h1 className="text-2xl font-semibold tracking-tight">Kampagnen vergleichen</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Compare campaigns</h1>
         <p className="text-sm text-muted-foreground">
-          Bitte im Dashboard mindestens zwei Kampagnen über „Vergleichen“ auswählen.
+          Select at least two campaigns via “Compare” on the dashboard.
         </p>
       </div>
     );
@@ -71,12 +71,12 @@ export default async function ComparePage({
   return (
     <div className="space-y-6">
       {back}
-      <h1 className="text-2xl font-semibold tracking-tight">Kampagnen vergleichen</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Compare campaigns</h1>
 
       <section aria-labelledby="timeline-title" className="rounded-xl border bg-card p-4">
         <div className="mb-3 flex items-baseline justify-between gap-2">
           <h2 id="timeline-title" className="font-semibold">
-            Zeitraum
+            Period
           </h2>
           <span className="text-xs text-muted-foreground">{formatDateRange(timeline.start, timeline.end)}</span>
         </div>
@@ -85,7 +85,7 @@ export default async function ComparePage({
             <div
               className="pointer-events-none absolute inset-y-0 z-10 w-px bg-status-red"
               style={{ left: `calc(10rem + (100% - 10rem) * ${timeline.today / 100})` }}
-              title={`Heute, ${formatDate(now)}`}
+              title={`Today, ${formatDate(now)}`}
             />
           )}
           {campaigns.map((c, i) => (
@@ -103,7 +103,7 @@ export default async function ComparePage({
         </div>
         {timeline.today != null && (
           <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span className="h-3 w-px bg-status-red" /> Heute
+            <span className="h-3 w-px bg-status-red" /> Today
           </p>
         )}
       </section>
@@ -113,7 +113,7 @@ export default async function ComparePage({
           <div className="py-3" />
           {summaries.map(({ campaign, rollup, markets }) => (
             <div key={campaign.id} className="space-y-1.5 px-3 py-3">
-              <Link href={`/kampagnen/${campaign.slug}`} className="font-semibold leading-tight hover:underline">
+              <Link href={`/campaigns/${campaign.slug}`} className="font-semibold leading-tight hover:underline">
                 {campaign.name}
               </Link>
               <div className="flex flex-wrap items-center gap-1.5">
@@ -128,16 +128,16 @@ export default async function ComparePage({
             </div>
           ))}
 
-          <Row label="Zeitraum">{campaigns.map((c) => formatDateRange(c.startDate, c.endDate))}</Row>
+          <Row label="Period">{campaigns.map((c) => formatDateRange(c.startDate, c.endDate))}</Row>
           <Row label="Owner">{campaigns.map((c) => c.owner.name)}</Row>
-          <Row label="Marke / Produktlinie">
+          <Row label="Brand / product line">
             {campaigns.map((c) => [c.brand, c.productLine].filter(Boolean).join(" / ") || "–")}
           </Row>
-          <Row label="Umsetzung">
+          <Row label="Execution">
             {campaigns.map((c) => EXECUTION_TYPE_LABELS[c.executionType as ExecutionType] ?? c.executionType)}
           </Row>
-          <Row label="Partner">{campaigns.map((c) => parseStringList(c.partners).join(", ") || "–")}</Row>
-          <Row label="Ziel">{campaigns.map((c) => c.objective ?? "–")}</Row>
+          <Row label="Partners">{campaigns.map((c) => parseStringList(c.partners).join(", ") || "–")}</Row>
+          <Row label="Objective">{campaigns.map((c) => c.objective ?? "–")}</Row>
           <Row label="Budget">{campaigns.map((c) => formatEuroCents(c.budgetCents))}</Row>
           {FUNNEL_STAGES.map((stage) => (
             <Row
@@ -154,7 +154,7 @@ export default async function ComparePage({
               })}
             </Row>
           ))}
-          <Row label="Fortschritt">
+          <Row label="Progress">
             {summaries.map((s) => (
               <ProgressBar key={s.campaign.id} progress={s.rollup.campaign.progress} />
             ))}
@@ -171,26 +171,26 @@ export default async function ComparePage({
                   <div key={campaign.id} className="space-y-1">
                     <div className="flex items-center justify-between gap-2">
                       <span className="tabular-nums">
-                        {s.progress.done}/{s.progress.total} Assets
+                        {s.progress.done}/{s.progress.total} assets
                       </span>
                       <TrafficLightBadge value={s.trafficLight} className="text-xs" />
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {channels.length === 0 ? "Keine Kanäle" : channels.map((c) => c.name).join(", ")}
+                      {channels.length === 0 ? "No channels" : channels.map((c) => c.name).join(", ")}
                     </p>
                   </div>
                 );
               })}
             </Row>
           ))}
-          <Row label="Überfällig">
+          <Row label="Overdue">
             {summaries.map((s) => (
               <span key={s.campaign.id} className={cn("tabular-nums", s.rollup.campaign.overdueCount > 0 && "font-semibold text-status-red")}>
                 {s.rollup.campaign.overdueCount}
               </span>
             ))}
           </Row>
-          <Row label="Bald fällig">
+          <Row label="Due soon">
             {summaries.map((s) => (
               <span key={s.campaign.id} className={cn("tabular-nums", s.dueSoonCount > 0 && "font-medium text-status-yellow")}>
                 {s.dueSoonCount}

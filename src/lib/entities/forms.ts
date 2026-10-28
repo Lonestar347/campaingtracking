@@ -4,7 +4,7 @@
 
 import { z } from "zod";
 import { ASSET_STATUSES, ASSET_TYPES, FUNNEL_STAGES, type FunnelStage } from "@/lib/domain/enums";
-import { formatGermanNumber, toDateInput } from "@/lib/format";
+import { formatNumber, toDateInput } from "@/lib/format";
 import { parseKpiTargets } from "@/lib/validation";
 import {
   checkDateOrder,
@@ -34,9 +34,9 @@ export interface ChannelEditValues {
 
 export const channelEditSchema = z
   .object({
-    channelTypeId: requiredText("Kanaltyp wählen"),
-    name: requiredText("Namen angeben").max(120, "Maximal 120 Zeichen"),
-    funnelStage: z.enum(FUNNEL_STAGES, { errorMap: () => ({ message: "Funnel-Stufe wählen" }) }),
+    channelTypeId: requiredText("Select a channel type"),
+    name: requiredText("Enter a name").max(120, "Maximum 120 characters"),
+    funnelStage: z.enum(FUNNEL_STAGES, { errorMap: () => ({ message: "Select a funnel stage" }) }),
     ownerId: optionalId,
     startDate: dateField(false),
     endDate: dateField(false),
@@ -80,7 +80,7 @@ export function channelFormFromRecord(channel: {
     kpis: Object.entries(parseKpiTargets(channel.kpiTargets)).map(([name, target], index) => ({
       clientId: `k${index}`,
       name,
-      target: formatGermanNumber(target, 4),
+      target: formatNumber(target, 4),
     })),
     notes: channel.notes ?? "",
   };
@@ -115,10 +115,10 @@ export interface AssetEditValues {
 }
 
 export const assetEditSchema = z.object({
-  title: requiredText("Titel angeben").max(200, "Maximal 200 Zeichen"),
-  assetType: z.enum(ASSET_TYPES, { errorMap: () => ({ message: "Asset-Typ wählen" }) }),
+  title: requiredText("Enter a title").max(200, "Maximum 200 characters"),
+  assetType: z.enum(ASSET_TYPES, { errorMap: () => ({ message: "Select an asset type" }) }),
   format: optionalText,
-  status: z.enum(ASSET_STATUSES, { errorMap: () => ({ message: "Status wählen" }) }),
+  status: z.enum(ASSET_STATUSES, { errorMap: () => ({ message: "Select a status" }) }),
   dueDate: dateField(false),
   ownerId: optionalId,
   approverId: optionalId,
@@ -128,7 +128,7 @@ export const assetEditSchema = z.object({
 export type AssetEditInput = z.output<typeof assetEditSchema>;
 
 export function emptyAssetForm(): AssetEditValues {
-  return { title: "", assetType: "", format: "", status: "IDEE", dueDate: "", ownerId: "", approverId: "", notes: "" };
+  return { title: "", assetType: "", format: "", status: "IDEA", dueDate: "", ownerId: "", approverId: "", notes: "" };
 }
 
 export function assetFormFromRecord(asset: {

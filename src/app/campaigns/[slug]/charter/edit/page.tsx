@@ -3,14 +3,14 @@ import { can, getCurrentUser } from "@/lib/auth";
 import { getCampaignBySlug, getCharterFormOptions } from "@/lib/queries";
 import { charterFormFromCampaign } from "@/lib/charter/edit";
 import { CharterWizard } from "@/components/charter/charter-wizard";
-import { updateCharter } from "@/app/kampagnen/actions";
+import { updateCharter } from "@/app/campaigns/actions";
 
-export const metadata = { title: "Charter bearbeiten · Kampagnen-Tracker" };
+export const metadata = { title: "Edit charter · Campaign Tracker" };
 
 export default async function EditCharterPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const user = await getCurrentUser();
-  if (!user || !can(user.role, "write")) redirect(`/kampagnen/${slug}/charter`);
+  if (!user || !can(user.role, "write")) redirect(`/campaigns/${slug}/charter`);
 
   const [campaign, options] = await Promise.all([getCampaignBySlug(slug), getCharterFormOptions()]);
   if (!campaign) notFound();
@@ -18,9 +18,9 @@ export default async function EditCharterPage({ params }: { params: Promise<{ sl
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-xl font-semibold tracking-tight">Launch Charter bearbeiten</h2>
+        <h2 className="text-xl font-semibold tracking-tight">Edit launch charter</h2>
         <p className="text-sm text-muted-foreground">
-          Aktuell Version {campaign.charter?.currentVersion ?? 0}. Kanäle und Assets werden in der Kampagne gepflegt.
+          Currently version {campaign.charter?.currentVersion ?? 0}. Channels and assets are managed in the campaign.
         </p>
       </div>
       <CharterWizard
@@ -29,7 +29,7 @@ export default async function EditCharterPage({ params }: { params: Promise<{ sl
         initialValues={charterFormFromCampaign(campaign)}
         onSubmit={updateCharter.bind(null, slug)}
         successSuffix="/charter"
-        cancelHref={`/kampagnen/${slug}/charter`}
+        cancelHref={`/campaigns/${slug}/charter`}
       />
     </div>
   );

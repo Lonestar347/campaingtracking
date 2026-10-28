@@ -41,13 +41,13 @@ async function checkReferences(input: CharterInput): Promise<FieldErrors> {
   const knownTypes = new Set(types.map((t) => t.id));
 
   const errors: FieldErrors = {};
-  if (!knownUsers.has(input.basis.ownerId)) errors["basis.ownerId"] = "Unbekannter Owner";
+  if (!knownUsers.has(input.basis.ownerId)) errors["basis.ownerId"] = "Unknown owner";
   input.channels.forEach((channel, ci) => {
-    if (!knownTypes.has(channel.channelTypeId)) errors[`channels.${ci}.channelTypeId`] = "Unbekannter Kanaltyp";
-    if (channel.ownerId && !knownUsers.has(channel.ownerId)) errors[`channels.${ci}.ownerId`] = "Unbekannte Person";
+    if (!knownTypes.has(channel.channelTypeId)) errors[`channels.${ci}.channelTypeId`] = "Unknown channel type";
+    if (channel.ownerId && !knownUsers.has(channel.ownerId)) errors[`channels.${ci}.ownerId`] = "Unknown person";
     channel.assets.forEach((asset, ai) => {
       if (asset.ownerId && !knownUsers.has(asset.ownerId)) {
-        errors[`channels.${ci}.assets.${ai}.ownerId`] = "Unbekannte Person";
+        errors[`channels.${ci}.assets.${ai}.ownerId`] = "Unknown person";
       }
     });
   });
@@ -55,7 +55,7 @@ async function checkReferences(input: CharterInput): Promise<FieldErrors> {
 }
 
 async function uniqueSlug(name: string, tx: Prisma.TransactionClient): Promise<string> {
-  const base = slugify(name) || "kampagne";
+  const base = slugify(name) || "campaign";
   let slug = base;
   for (let n = 2; await tx.campaign.findUnique({ where: { slug }, select: { id: true } }); n++) {
     slug = `${base}-${n}`;
@@ -86,7 +86,7 @@ export async function createCampaignFromCharter(values: CharterFormValues): Prom
             currentVersion: 1,
             data: plan.charterData,
             versions: {
-              create: { version: 1, data: plan.charterData, createdById: userId, changeNote: "Erstanlage" },
+              create: { version: 1, data: plan.charterData, createdById: userId, changeNote: "Initial version" },
             },
           },
         },
@@ -132,13 +132,13 @@ export async function updateCharter(slug: string, values: CharterFormValues): Pr
   if (Object.keys(referenceErrors).length > 0) return { ok: false, fieldErrors: referenceErrors };
 
   const campaign = await db.campaign.findUnique({ where: { slug }, include: { charter: true } });
-  if (!campaign) return { ok: false, formError: "Kampagne nicht gefunden." };
+  if (!campaign) return { ok: false, formError: "Campaign not found." };
 
   const next = charterDataFromInput(result.data);
   const previousParsed = launchCharterDataSchema.safeParse(campaign.charter?.data ?? {});
   const previous = previousParsed.success ? previousParsed.data : null;
   const changed = previous ? changedCharterSections(previous, next) : ["Charter"];
-  if (changed.length === 0) return { ok: true, slug, message: "Keine Änderungen." };
+  if (changed.length === 0) return { ok: true, slug, message: "No changes." };
 
   const userId = auth.user.id;
   const version = (campaign.charter?.currentVersion ?? 0) + 1;
@@ -191,6 +191,6 @@ export async function updateCharter(slug: string, values: CharterFormValues): Pr
   });
 
   revalidatePath("/");
-  revalidatePath(`/kampagnen/${slug}`, "layout");
+  revalidatePath(`/campaigns/${slug}`, "layout");
   return { ok: true, slug };
 }

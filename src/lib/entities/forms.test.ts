@@ -25,7 +25,7 @@ describe("channel form", () => {
       notes: null,
     };
     const form = channelFormFromRecord(record);
-    expect(form.kpis.map((k) => k.target)).toEqual(["2.000.000", "1,25"]);
+    expect(form.kpis.map((k) => k.target)).toEqual(["2,000,000", "1.25"]);
 
     const result = validate(channelEditSchema, form);
     if (!result.success) throw new Error(JSON.stringify(result.errors));
@@ -46,11 +46,11 @@ describe("channel form", () => {
     expect(result.success).toBe(false);
     if (result.success) return;
     expect(result.errors).toMatchObject({
-      channelTypeId: "Kanaltyp wählen",
-      name: "Namen angeben",
-      funnelStage: "Funnel-Stufe wählen",
-      "kpis.1.name": "KPI doppelt",
-      "kpis.1.target": "Zielwert als Zahl angeben",
+      channelTypeId: "Select a channel type",
+      name: "Enter a name",
+      funnelStage: "Select a funnel stage",
+      "kpis.1.name": "Duplicate KPI",
+      "kpis.1.target": "Enter the target as a number",
     });
   });
 
@@ -63,12 +63,12 @@ describe("channel form", () => {
     const result = validate(channelEditSchema, form);
     expect(result.success).toBe(false);
     if (result.success) return;
-    expect(result.errors).toEqual({ endDate: "Ende liegt vor dem Start" });
+    expect(result.errors).toEqual({ endDate: "End is before start" });
   });
 });
 
 describe("asset form", () => {
-  it("defaults to status IDEE and requires title and type", () => {
+  it("defaults to status IDEA and requires title and type", () => {
     const result = validate(assetEditSchema, emptyAssetForm());
     expect(result.success).toBe(false);
     if (result.success) return;
@@ -80,11 +80,11 @@ describe("asset form", () => {
       title: "Reel",
       assetType: "VIDEO",
       format: "9:16",
-      status: "FREIGABE",
+      status: "APPROVAL",
       dueDate: new Date("2026-11-20T00:00:00Z"),
       ownerId: "u1",
       approverId: null,
-      notes: "Bitte prüfen",
+      notes: "Please review",
     };
     const result = validate(assetEditSchema, assetFormFromRecord(record));
     if (!result.success) throw new Error(JSON.stringify(result.errors));
@@ -92,7 +92,7 @@ describe("asset form", () => {
   });
 
   it("rejects unknown statuses", () => {
-    const result = validate(assetEditSchema, { ...emptyAssetForm(), title: "x", assetType: "VIDEO", status: "DONE" });
+    const result = validate(assetEditSchema, { ...emptyAssetForm(), title: "x", assetType: "VIDEO", status: "FINISHED" });
     expect(result.success).toBe(false);
   });
 });
@@ -108,13 +108,13 @@ describe("diffFields", () => {
     };
     const after = {
       title: "A",
-      status: "IN_PRODUKTION",
+      status: "IN_PRODUCTION",
       dueDate: new Date("2026-11-20T00:00:00Z"),
       ownerId: "u1",
       kpiTargets: { a: 1 },
     };
     expect(diffFields(before, after)).toEqual([
-      { field: "status", from: "BRIEFING", to: "IN_PRODUKTION" },
+      { field: "status", from: "BRIEFING", to: "IN_PRODUCTION" },
       { field: "ownerId", from: null, to: "u1" },
     ]);
   });

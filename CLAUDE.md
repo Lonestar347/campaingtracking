@@ -117,8 +117,8 @@ Nach dem Speichern wird die Mindmap der Kampagne automatisch aus der Charter erz
 Nach jeder Phase: lauffähiger Stand, kurze Notiz im README, was fertig ist.
 
 ## Konventionen
-- UI-Sprache Deutsch; Code, Variablen, Commits auf Englisch
-- Datumsformat TT.MM.JJJJ, Währung EUR
+- UI-Sprache Englisch (britisch); Code, Variablen, Commits auf Englisch
+- Datumsformat DD/MM/YYYY, Währung EUR (zentral in `src/lib/config.ts`)
 - Status- und Rollup-Logik in eigenen, getesteten Funktionen (Unit-Tests mit Vitest)
 - Keine echten Kampagnendaten in Seed-Dateien
 

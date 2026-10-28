@@ -32,7 +32,7 @@ export function daysBetween(from: Date, to: Date, timeZone: string = statusConfi
   return toDayNumber(to, timeZone) - toDayNumber(from, timeZone);
 }
 
-/** Formats a date as TT.MM.JJJJ. */
+/** Formats a date in the app locale, e.g. 28/10/2026. */
 export function formatDate(date: Date | null | undefined): string {
   if (!date) return "–";
   return new Intl.DateTimeFormat(appConfig.locale, {
@@ -47,7 +47,7 @@ export function formatDateRange(start: Date | null | undefined, end: Date | null
   return `${formatDate(start)} – ${formatDate(end)}`;
 }
 
-/** Formats an amount in EUR cents, e.g. 1234500 -> "12.345,00 €". */
+/** Formats an amount in EUR cents, e.g. 1234500 -> "€12,345.00". */
 export function formatEuroCents(cents: number | null | undefined): string {
   if (cents == null) return "–";
   return new Intl.NumberFormat(appConfig.locale, {

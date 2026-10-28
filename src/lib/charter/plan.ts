@@ -8,16 +8,16 @@ import type { CharterInput } from "@/lib/charter/form";
 import { toLookerEmbedUrl } from "@/lib/links";
 
 export const CHARTER_LINK_DEFS: readonly { key: keyof CharterInput["links"]; type: LinkType; label: string }[] = [
-  { key: "frontify", type: "frontify", label: "Frontify-Ordner" },
-  { key: "sharepoint", type: "sharepoint", label: "SharePoint-Ordner" },
-  { key: "lookerStudio", type: "looker_studio", label: "Looker-Studio-Report" },
+  { key: "frontify", type: "frontify", label: "Frontify folder" },
+  { key: "sharepoint", type: "sharepoint", label: "SharePoint folder" },
+  { key: "lookerStudio", type: "looker_studio", label: "Looker Studio report" },
 ];
 
 export interface PlannedAsset {
   title: string;
   assetType: AssetType;
   format: string | null;
-  status: "IDEE";
+  status: "IDEA";
   dueDate: Date | null;
   ownerId: string | null;
   sortOrder: number;
@@ -132,7 +132,7 @@ export function buildCampaignPlan(input: CharterInput): CampaignPlan {
         title: asset.title,
         assetType: asset.assetType,
         format: asset.format ?? null,
-        status: "IDEE",
+        status: "IDEA",
         dueDate: asset.dueDate ?? null,
         ownerId: asset.ownerId ?? null,
         sortOrder: assetIndex,
@@ -164,15 +164,15 @@ export function diffCharterLinks(
 }
 
 const SECTION_LABELS: Record<keyof LaunchCharterData, string> = {
-  basis: "Basis",
-  strategy: "Strategie",
+  basis: "Basics",
+  strategy: "Strategy",
   budget: "Budget",
   links: "Links",
-  stakeholders: "Stakeholder",
-  approvalProcess: "Freigabeprozess",
+  stakeholders: "Stakeholders",
+  approvalProcess: "Approval process",
 };
 
-/** Charter sections that differ between two versions, as German labels. */
+/** Charter sections that differ between two versions, as display labels. */
 export function changedCharterSections(previous: LaunchCharterData, next: LaunchCharterData): string[] {
   return (Object.keys(SECTION_LABELS) as (keyof LaunchCharterData)[])
     .filter((key) => stableStringify(previous[key]) !== stableStringify(next[key]))

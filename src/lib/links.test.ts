@@ -67,7 +67,7 @@ describe("validateLinkForm", () => {
 
   it("validates url, thumbnail and embeddability", () => {
     const empty = validateLinkForm(emptyLinkForm());
-    expect(!empty.success && empty.errors).toEqual({ url: "URL angeben" });
+    expect(!empty.success && empty.errors).toEqual({ url: "Enter a URL" });
 
     const invalid = validateLinkForm({ ...emptyLinkForm(), url: "ftp://x", thumbnailUrl: "bild.png" });
     expect(!invalid.success && Object.keys(invalid.errors).sort()).toEqual(["thumbnailUrl", "url"]);
@@ -77,6 +77,6 @@ describe("validateLinkForm", () => {
       url: "https://lookerstudio.google.com/navigation/reporting",
       embed: true,
     });
-    expect(!notEmbeddable.success && notEmbeddable.errors.embed).toMatch(/Report-Link/);
+    expect(!notEmbeddable.success && notEmbeddable.errors.embed).toMatch(/report link/);
   });
 });

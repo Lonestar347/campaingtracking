@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { ExternalLink } from "lucide-react";
 import { getCampaignBySlug } from "@/lib/queries";
 import { formatDate, formatDateRange } from "@/lib/dates";
-import { formatGermanNumber } from "@/lib/format";
+import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import {
   ASSET_STATUS_LABELS,
@@ -67,7 +67,7 @@ export default async function CampaignFunnelPage({ params }: { params: Promise<{
 
               <div className="space-y-3 p-3">
                 {channels.length === 0 && (
-                  <p className="px-1 py-2 text-sm text-muted-foreground">Keine Kanäle in dieser Stufe.</p>
+                  <p className="px-1 py-2 text-sm text-muted-foreground">No channels in this stage.</p>
                 )}
                 {channels.map((channel) => {
                   const channelSummary = summarizeAssets(channel.assets, now);
@@ -79,7 +79,7 @@ export default async function CampaignFunnelPage({ params }: { params: Promise<{
                           <h3 className="font-medium leading-tight">{channel.name}</h3>
                           <p className="mt-0.5 text-xs text-muted-foreground">
                             {channel.channelType.name !== channel.name && `${channel.channelType.name} · `}
-                            {channel.owner?.name ?? "Owner offen"}
+                            {channel.owner?.name ?? "No owner"}
                             {(channel.startDate || channel.endDate) &&
                               ` · ${formatDateRange(channel.startDate, channel.endDate)}`}
                           </p>
@@ -91,7 +91,7 @@ export default async function CampaignFunnelPage({ params }: { params: Promise<{
                         <ul className="mt-2 flex flex-wrap gap-1.5">
                           {kpis.map(([name, target]) => (
                             <li key={name} className="rounded bg-muted px-1.5 py-0.5 text-xs">
-                              {name}: <span className="font-semibold tabular-nums">{formatGermanNumber(target)}</span>
+                              {name}: <span className="font-semibold tabular-nums">{formatNumber(target)}</span>
                             </li>
                           ))}
                         </ul>
@@ -124,7 +124,7 @@ export default async function CampaignFunnelPage({ params }: { params: Promise<{
                                             ? "font-medium text-status-yellow"
                                             : "text-muted-foreground",
                                       )}
-                                      title={overdue ? "Überfällig" : dueSoon ? "Bald fällig" : "Fällig"}
+                                      title={overdue ? "Overdue" : dueSoon ? "Due soon" : "Due"}
                                     >
                                       {formatDate(asset.dueDate)}
                                     </span>

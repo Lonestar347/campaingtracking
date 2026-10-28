@@ -1,226 +1,224 @@
-# Kampagnen-Tracker
+# Campaign Tracker
 
-Visuelles Team-Tool, um Marketingkampagnen zu planen, zu ordnen und zu tracken
-(Dashboard → Kampagne → Funnel-Stufe → Kanal → Asset). Projekt-Briefing: siehe `CLAUDE.md`.
+Visual team tool for planning, organising and tracking marketing campaigns
+(dashboard → campaign → funnel stage → channel → asset). Project brief: see `CLAUDE.md`.
 
 ## Setup
 
-Voraussetzung: Node.js 20+.
+Requirement: Node.js 20+.
 
 ```bash
-npm install            # installiert Abhängigkeiten und generiert den Prisma Client
-cp .env.example .env   # lokale Einstellungen (SQLite-Datei, Storage, Dev-User)
-npm run db:push        # Datenbankschema anlegen (SQLite: prisma/dev.db)
-npm run db:seed        # Stammdaten + 3 fiktive Beispielkampagnen laden (löscht vorhandene Daten)
+npm install            # installs dependencies and generates the Prisma client
+cp .env.example .env   # local settings (SQLite file, storage, dev user)
+npm run db:push        # creates the database schema (SQLite: prisma/dev.db)
+npm run db:seed        # loads master data + 3 fictional sample campaigns (wipes existing data)
 npm run dev            # http://localhost:3000
 ```
 
-Weitere Befehle:
+More commands:
 
-| Befehl | Zweck |
+| Command | Purpose |
 | --- | --- |
-| `npm test` | Unit-Tests (Vitest) |
-| `npm run typecheck` | TypeScript-Prüfung |
+| `npm test` | Unit tests (Vitest) |
+| `npm run typecheck` | TypeScript check |
 | `npm run lint` | ESLint |
-| `npm run db:reset` | Datenbank leeren, Schema neu anlegen, Seed laden |
-| `npm run db:studio` | Prisma Studio (Daten im Browser ansehen) |
+| `npm run db:reset` | Wipe the database, recreate the schema, load the seed |
+| `npm run db:studio` | Prisma Studio (browse data in the browser) |
 
-## Struktur
+> **Upgrading from a German version of the app:** stored status values and labels were renamed
+> (e.g. `IDEE` → `IDEA`). Run `npm run db:reset` once to recreate the local database.
+
+## Structure
 
 ```
 prisma/
-  schema.prisma          Datenmodell (SQLite lokal, Postgres-kompatibel)
-  seed.ts                Stammdaten, Demo-User, Beispielkampagnen
+  schema.prisma          data model (SQLite locally, Postgres-compatible)
+  seed.ts                master data, demo users, sample campaigns
 src/
-  app/                   Next.js App Router (Seiten)
-    page.tsx             Dashboard (Kennzahlen, Filter, Kampagnenkarten, Kritisch-Bereich)
-    vergleich/           Kampagnen nebeneinander vergleichen (?k=slug-a,slug-b)
-    kampagnen/neu        Launch-Charter-Wizard (neue Kampagne)
-    kampagnen/[slug]     Mindmap (Kernansicht), Funnel-, Charter- und Performance-Ansicht, Charter bearbeiten
-    kampagnen/actions.ts Server Actions: Kampagne aus Charter anlegen, Charter versioniert ändern
-    kampagnen/entity-actions.ts  Server Actions: Kanäle/Assets anlegen, ändern, löschen, Status setzen
-    kampagnen/link-actions.ts    Server Actions: Links an Kampagne/Kanal/Asset anlegen, ändern, löschen
-    kampagnen/import-actions.ts  Server Actions: Report analysieren, prüfen/importieren, löschen
-    api/reports/[id]/datei       Download der Originaldatei eines Reports
-  components/            UI-Komponenten (shadcn/ui-Konventionen, components.json)
-    ui/                  Basiskomponenten (Button, Input, Select, Field …)
-    charter/             Wizard und seine Schritte
-    dashboard/           Filterleiste, Kampagnenkarte, Vergleichsauswahl, Kritisch-Liste
-    kpi-import/          Import-Assistent, Zielerreichungs-Diagramm, Report löschen
-    links/               Link-Verwaltung (Liste, Formular, Vorschaubild) und Typ-Icons
-    mindmap/             React-Flow-Mindmap, Knoten, Detail-Panel, Kanal-/Asset-Formulare
+  app/                   Next.js App Router (pages)
+    page.tsx             dashboard (stats, filters, campaign cards, critical section)
+    compare/             compare campaigns side by side (?c=slug-a,slug-b)
+    campaigns/new        launch charter wizard (new campaign)
+    campaigns/[slug]     mind map (core view), funnel, charter and performance views, edit charter
+    campaigns/actions.ts         server actions: create campaign from charter, versioned charter edits
+    campaigns/entity-actions.ts  server actions: create/update/delete channels and assets, set status
+    campaigns/link-actions.ts    server actions: create/update/delete links on campaign/channel/asset
+    campaigns/import-actions.ts  server actions: analyse report, check/import, delete
+    api/reports/[id]/file        download of a report's original file
+  components/            UI components (shadcn/ui conventions, components.json)
+    ui/                  base components (Button, Input, Select, Field …)
+    charter/             wizard and its steps
+    dashboard/           filter bar, campaign card, comparison selection, critical list
+    kpi-import/          import wizard, target achievement chart, delete report
+    links/               link management (list, form, preview image) and type icons
+    mindmap/             React Flow mind map, nodes, detail panel, channel/asset forms
   lib/
-    config.ts            zentrale Schwellen (z. B. „fällig in 7 Tagen“), Zeitzone, Locale
-    dates.ts             Tagesvergleich in Europe/Berlin, Formatierung TT.MM.JJJJ / EUR
-    domain/              feste Wertelisten (Funnel-Stufen, Status, Rollen …) und Kanaltypen
-    status/              abgeleitete Status-Logik (Fortschritt, Ampel, Phase, Rollup) + Tests
-    validation/          Zod-Schemas (Charter-Daten, KPI-Ziele, Märkte …), gemeinsame Feld-Schemas
-    charter/             Wizard-Formular (Zod), Erzeugung von Kampagne/Kanälen/Assets aus der Charter + Tests
-    dashboard/           Filter (URL-Parameter), Sortierung, Kritisch-Listen, Kennzahlen, Zeitleiste + Tests
-    entities/            Kanal-/Asset-Formulare (Zod), Änderungserkennung fürs Activity Log + Tests
-    mindmap/             Graph-Aufbau mit Status-Rollup und Baum-Layout + Tests
-    kpi-import/          Report-Import: Tabellenerkennung, Zahlen/Daten, Zuordnung, Ziel vs. Ist + Tests;
-                         parse-file.ts liest .xlsx (exceljs) und .csv (papaparse) – nur serverseitig
-    links.ts             Link-Typ-Erkennung, Looker-Studio-Einbettungs-URL, Link-Formular + Tests
-    format.ts            deutsche Zahleneingabe, Cent-Umrechnung, Slugs, Datumsfelder
-    queries.ts           Datenzugriff für die Seiten
-    auth/                Auth-Abstraktion (heute: Dev-User, später Auth.js + Entra ID)
-    storage/             Storage-Abstraktion (heute: lokales Dateisystem)
-    db.ts                Prisma Client
+    config.ts            central thresholds (e.g. "due within 7 days"), time zone, locale
+    dates.ts             day comparison in Europe/Berlin, formatting DD/MM/YYYY / EUR
+    domain/              fixed value sets (funnel stages, statuses, roles …) and channel types
+    status/              derived status logic (progress, traffic light, phase, rollup) + tests
+    validation/          Zod schemas (charter data, KPI targets, markets …), shared field schemas
+    charter/             wizard form (Zod), creating campaign/channels/assets from the charter + tests
+    dashboard/           filters (URL parameters), sorting, critical lists, stats, timeline + tests
+    entities/            channel/asset forms (Zod), change detection for the activity log + tests
+    mindmap/             graph building with status rollup and tree layout + tests
+    kpi-import/          report import: table detection, numbers/dates, mapping, target vs. actual + tests;
+                         parse-file.ts reads .xlsx (exceljs) and .csv (papaparse) – server only
+    links.ts             link type detection, Looker Studio embed URL, link form + tests
+    format.ts            number input, cent conversion, slugs, date fields
+    queries.ts           data access for the pages
+    auth/                auth abstraction (today: dev user, later Auth.js + Entra ID)
+    storage/             storage abstraction (today: local file system)
+    db.ts                Prisma client
 ```
 
-## Designentscheidungen
+## Design decisions
 
-- **Postgres-Kompatibilität:** Feste Wertelisten (Funnel-Stufe, Asset-Status, Rolle, Link-Typ …)
-  sind als Strings gespeichert und werden per Zod geprüft (SQLite kennt in Prisma keine Enums).
-  Listen/Key-Value-Daten (Märkte, Partner, KPI-Ziele, Charter-Inhalt) sind `Json`.
-  Beträge werden als Integer-Cent (EUR) gespeichert.
-- **Abgeleiteter Status wird nie gespeichert**, sondern in `src/lib/status` berechnet:
-  - Fortschritt = Assets in `FERTIG`/`LIVE` ÷ alle Assets; `ABGEBROCHEN` zählt nicht mit.
-  - Ampel **Rot**: ein Asset ist überfällig (Fälligkeit vor heute) und nicht fertig;
-    `PAUSIERT` zählt dabei als nicht fertig, `ABGEBROCHEN` wird ignoriert.
-  - Ampel **Gelb**: ein Asset ist heute oder in den nächsten 7 Tagen fällig und noch nicht in
-    `FREIGABE` oder später.
-  - Phase: `Abgeschlossen` nach Enddatum; `Live` ab Startdatum oder sobald ein Asset live ist;
-    `In Arbeit` sobald ein Asset über `IDEE` hinaus ist; sonst `Planung`.
-  - „Heute“ und Fälligkeiten werden als Kalendertag in Europe/Berlin verglichen.
-- **Launch Charter** ist versioniert: `LaunchCharter.data` enthält den aktuellen Stand, jede
-  Änderung schreibt zusätzlich eine unveränderliche `LaunchCharterVersion`.
-- **Launch Charter → Kampagne:** Beim Anlegen erzeugt `buildCampaignPlan` (getestet) aus der Charter
-  Kampagne, Kanäle (mit KPI-Zielen und ggf. geänderter Funnel-Stufe), Assets (Status `IDEE`) und
-  Links – alles in einer Transaktion, plus Activity-Log-Eintrag. Der Basis-Teil (Name, Zeitraum,
-  Märkte …) wird zusätzlich als Snapshot in jeder Charter-Version gespeichert.
-- **Charter bearbeiten** ändert Basis, Strategie, Budget, Links und Stakeholder und legt eine neue
-  Version an (mit optionaler Änderungsnotiz; der Verlauf zeigt die geänderten Abschnitte).
-  Kanäle und Assets werden danach in der Kampagne gepflegt (ab Phase 3 in der Mindmap).
-- **Zahlen-Eingaben** sind im deutschen Format (`25.000`, `1.500,50`). Ein ungespeicherter
-  Wizard-Entwurf wird im Browser (localStorage) gehalten und kann wiederhergestellt werden.
-- **Mindmap-Layout:** eigenes, getestetes Baum-Layout (`src/lib/mindmap/graph.ts`) statt dagre/elk –
-  die Struktur ist fest vierstufig (Kampagne → Stufe → Kanal → Asset), so bleibt die Anordnung
-  stabil und vorhersagbar: Baum von links nach rechts, Funnel-Stufen von oben nach unten,
-  jeder Knoten mittig zu seinen Kindern. Knoten sind nicht frei verschiebbar.
-- **Dashboard-Filter** stehen in der URL (z. B. `/?markt=DE,AT&phase=LIVE&ampel=RED&sortierung=ampel`),
-  gefilterte Ansichten lassen sich also als Link teilen. Markt: Kampagne läuft in mindestens einem der
-  gewählten Märkte. Zeitraum: Kampagnenzeitraum überschneidet sich mit dem gewählten Zeitraum.
-  Kennzahlen und Kritisch-Bereich beziehen sich auf die gefilterten Kampagnen.
-- **Links:** Der Typ wird aus der URL erkannt (`*.frontify.com`, `*.sharepoint.com`,
-  `lookerstudio.google.com`), lässt sich aber überschreiben. Icons sind neutrale Symbole, keine
-  Hersteller-Logos. Vorschaubilder sind optionale Bild-URLs. Looker-Studio-Links mit
-  `Link.embed = true` werden im Performance-Tab per iframe eingebettet
-  (`…/reporting/<id>` → `…/embed/reporting/<id>`); ob das klappt, entscheidet die Freigabe des
-  Reports in Looker Studio – der Link zum Öffnen ist deshalb immer daneben.
-- **Report-Import:** Upload → Analyse (Tabellenblatt, Kopfzeile unter Titelzeilen, Summenzeilen
-  werden übersprungen, Zahlenformat erkannt) → Zuordnung → Prüfen (Probelauf, nichts wird
-  gespeichert) → Import. Zwei Tabellenformate: „breit“ (eine Spalte pro KPI) und „lang“ (Spalten
-  KPI + Wert). Kanalnamen aus der Datei werden mit Kanalname/-typ abgeglichen; unbekannte Namen
-  ordnet man einmalig zu – diese Zuordnung wird mit der Quelle gespeichert. Gespeicherte
-  Zuordnungen werden beim nächsten Upload anhand der Spalten wiedererkannt. Fehler (fehlende
-  Spalten, ungültige Zahlen/Daten) kommen mit Zeilennummer und blockieren den Import.
-  Die Originaldatei liegt im Storage (`storage/uploads/reports/<Kampagne>/…`).
-  Bibliotheken: exceljs + papaparse statt SheetJS – das npm-Paket `xlsx` ist veraltet (0.18.5,
-  bekannte Lücke beim Einlesen), aktuelle SheetJS-Versionen gibt es nur über deren CDN.
-  Alte `.xls`-Dateien werden daher nicht unterstützt (bitte als `.xlsx` speichern).
-- **Ziel vs. Ist:** Ist-Werte aus allen Reports eines Kanals: Mengen werden summiert, Raten und
-  Durchschnittswerte (%, CTR, CPM, ROAS, Verweildauer …) gemittelt. Bei Kosten-KPIs (CPM, CPC, CPA …)
-  ist niedriger besser, die Zielerreichung ist dort Ziel ÷ Ist. KPI-Namen werden ohne Groß-/
-  Kleinschreibung abgeglichen. Überschneiden sich Reports (gleiche Quelle und Zeitraum), warnt der
-  Import vor doppelt gezählten Werten.
-- **Activity Log:** Anlegen, Ändern (mit geänderten Feldern), Verschieben, Löschen und
-  Statuswechsel (`status_changed` mit von/nach) von Kanälen und Assets werden protokolliert,
-  ebenso Link-Änderungen (`link_added`, `link_updated`, `link_removed`) am jeweiligen Objekt.
-- **Links** hängen über echte Fremdschlüssel an Kampagne, Kanal oder Asset (Cascade-Delete).
-  **Kommentare** und **Activity Log** hängen generisch über `entityType` + `entityId` an jedem Objekt.
-- **Farben:** Josera Gold/Ruby nur als UI-Akzent. Ampelfarben sind eigene Tokens
-  (`status-red/yellow/green`), Ruby wird nie als Fehler-Rot verwendet. Funnel-Stufen haben je eine
-  ruhige Farbe (`stage-awareness/consideration/sales`). Hell-/Dunkelmodus folgt der Systemeinstellung.
+- **Language and formats:** UI in English (British). Dates as DD/MM/YYYY, amounts as `€12,345.00`,
+  numbers typed as `25,000` / `1,500.50`. The locale is set in one place (`src/lib/config.ts`).
+- **Postgres compatibility:** fixed value sets (funnel stage, asset status, role, link type …) are
+  stored as strings and validated with Zod (SQLite has no enums in Prisma). Lists and key/value
+  data (markets, partners, KPI targets, charter content) are `Json`. Amounts are integer cents (EUR).
+- **Derived status is never stored**, it is computed in `src/lib/status`:
+  - Progress = assets in `DONE`/`LIVE` ÷ all assets; `CANCELLED` does not count.
+  - Traffic light **red**: an asset is overdue (due before today) and not done; `PAUSED` counts as
+    not done, `CANCELLED` is ignored.
+  - Traffic light **yellow**: an asset is due today or within the next 7 days and not yet in
+    `APPROVAL` or later.
+  - Phase: `Completed` after the end date; `Live` from the start date or as soon as an asset is live;
+    `In progress` once an asset has moved beyond `IDEA`; otherwise `Planning`.
+  - "Today" and due dates are compared as calendar days in Europe/Berlin.
+- **Launch charter** is versioned: `LaunchCharter.data` holds the current state, every change also
+  writes an immutable `LaunchCharterVersion`.
+- **Launch charter → campaign:** on creation, `buildCampaignPlan` (tested) turns the charter into the
+  campaign, channels (with KPI targets and, if changed, funnel stage), assets (status `IDEA`) and
+  links – all in one transaction, plus an activity log entry. The basics (name, period, markets …)
+  are also stored as a snapshot in every charter version.
+- **Editing the charter** changes basics, strategy, budget, links and stakeholders and creates a new
+  version (with an optional change note; the history shows the changed sections). Channels and
+  assets are managed in the mind map.
+- An unsaved wizard draft is kept in the browser (localStorage) and can be restored.
+- **Mind map layout:** own, tested tree layout (`src/lib/mindmap/graph.ts`) instead of dagre/elk –
+  the structure is a fixed four levels (campaign → stage → channel → asset), so the arrangement stays
+  stable and predictable: tree from left to right, funnel stages from top to bottom, each node
+  centred on its children. Nodes cannot be dragged.
+- **Dashboard filters** live in the URL (e.g. `/?market=DE,AT&phase=LIVE&status=RED&sort=urgency`),
+  so filtered views can be shared as links. Market: the campaign runs in at least one of the
+  selected markets. Period: the campaign period overlaps the selected period. Stats and the critical
+  section refer to the filtered campaigns.
+- **Links:** the type is detected from the URL (`*.frontify.com`, `*.sharepoint.com`,
+  `lookerstudio.google.com`) but can be overridden. Icons are neutral symbols, not vendor logos.
+  Preview images are optional image URLs. Looker Studio links with `Link.embed = true` are embedded
+  in the performance tab via iframe (`…/reporting/<id>` → `…/embed/reporting/<id>`); whether that
+  works depends on the report's sharing settings in Looker Studio, so the link to open it is always
+  shown next to it.
+- **Report import:** upload → analysis (sheet, header row below title rows, total rows skipped,
+  number format detected) → mapping → check (dry run, nothing is saved) → import. Two table
+  layouts: "wide" (one column per KPI) and "long" (KPI + value columns). Channel names from the file
+  are matched against channel name/type; unknown names are mapped once and the mapping is saved
+  with the source. Saved mappings are recognised on the next upload by their columns. Errors
+  (missing columns, invalid numbers/dates) come with row numbers and block the import.
+  English **and** German reports are understood (column names such as "Datum"/"Kanal", number
+  formats `1,234.5` and `1.234,5`, Windows-1252 CSV exports).
+  The original file is kept in storage (`storage/uploads/reports/<campaign>/…`).
+  Libraries: exceljs + papaparse instead of SheetJS – the npm package `xlsx` is outdated (0.18.5,
+  known vulnerability when parsing files), current SheetJS versions are only available from their
+  CDN. Legacy `.xls` files are therefore not supported (save as `.xlsx`).
+- **Target vs. actual:** actuals from all reports of a channel: counts are summed, rates and averages
+  (%, CTR, CPM, ROAS, time on page …) are averaged. For cost KPIs (CPM, CPC, CPA …) lower is better
+  and achievement is target ÷ actual. KPI names are matched case-insensitively. If reports overlap
+  (same source and period), the import warns about values being counted twice.
+- **Activity log:** creating, updating (with the changed fields), moving, deleting and status changes
+  (`status_changed` with from/to) of channels and assets are logged, as are link changes
+  (`link_added`, `link_updated`, `link_removed`) on the respective object.
+- **Links** are attached to campaign, channel or asset via real foreign keys (cascade delete).
+  **Comments** and the **activity log** attach generically to any object via `entityType` + `entityId`.
+- **Colours:** Josera Gold/Ruby only as UI accents. Traffic light colours are separate tokens
+  (`status-red/yellow/green`); Ruby is never used as an error red. Each funnel stage has a calm
+  colour (`stage-awareness/consideration/sales`), validated for colour-vision deficiencies, contrast
+  and chroma in light and dark mode. Light/dark mode follows the system setting.
 
-## Stand
+## Status
 
-### Phase 1 – Grundgerüst ✅
+### Phase 1 – Foundation ✅
 
-- Next.js 15 (App Router) + TypeScript + Tailwind CSS 4, shadcn/ui-Basis (`components.json`, `cn`)
-- Prisma-Schema mit allen Entitäten aus dem Briefing (User, Campaign, LaunchCharter inkl.
-  Versionen, ChannelType, Channel, Asset, Link, KpiReport, KpiValue, KpiImportMapping, Comment,
-  ActivityLog)
-- Seed: 16 Kanaltypen mit Default-Funnel-Stufe, 6 Demo-User (alle Rollen), 3 fiktive Kampagnen,
-  die gemeinsam alle Ampel- und Phasenzustände abdecken (Daten relativ zum Seed-Datum)
-- Getestete Status- und Rollup-Logik (Vitest), zentrale Schwellen in `src/lib/config.ts`
-- Auth- und Storage-Abstraktion als austauschbare Schichten
-- Kontrollseite `/`: Kampagnenkarten mit Ampel, Phase, Fortschritt und Funnel-Rollup
-  (das eigentliche Dashboard folgt in Phase 4)
+- Next.js 15 (App Router) + TypeScript + Tailwind CSS 4, shadcn/ui base (`components.json`, `cn`)
+- Prisma schema with all entities from the brief (User, Campaign, LaunchCharter incl. versions,
+  ChannelType, Channel, Asset, Link, KpiReport, KpiValue, KpiImportMapping, Comment, ActivityLog)
+- Seed: 16 channel types with default funnel stage, 6 demo users (all roles), 3 fictional campaigns
+  that together cover all traffic light and phase states (dates relative to the seed date)
+- Tested status and rollup logic (Vitest), central thresholds in `src/lib/config.ts`
+- Auth and storage abstractions as swappable layers
 
-### Phase 2 – Launch Charter ✅
+### Phase 2 – Launch charter ✅
 
-- Wizard `/kampagnen/neu` mit 7 Schritten + Prüfseite: Basis, Strategie, Budget (inkl. Aufteilung
-  nach Funnel-Stufe), Kanäle (gruppiert nach Funnel-Stufe, KPI-Ziele, Stufe änderbar, Duplizieren
-  z. B. pro Markt), Assets, Links, Stakeholder/Freigabeprozess
-- Validierung pro Schritt mit deutschen Fehlermeldungen; Server prüft erneut (inkl. Rechte und
-  existierender Nutzer/Kanaltypen)
-- Automatische Erzeugung von Kampagne, Kanälen, Assets, Links und Charter-Version 1
-- Kampagnenseite mit Funnel-Spalten (Ampel/Fortschritt je Stufe und Kanal, KPI-Ziele, Assets mit
-  Fälligkeit und Status) und Link-Leiste
-- Charter-Ansicht: lesbare, druckbare Zusammenfassung (Abschnitte 1–7) mit Versionsverlauf
-- Charter bearbeiten → neue Version, Änderungen am Kampagnen-Datensatz und an Charter-Links
-- Entwurf-Wiederherstellung, Warnung beim Verlassen mit ungespeicherten Änderungen
-- Startseite: Karten verlinken auf die Kampagne, Button „Neue Kampagne“
+- Wizard `/campaigns/new` with 7 steps + review: basics, strategy, budget (incl. split by funnel
+  stage), channels (grouped by funnel stage, KPI targets, changeable stage, duplicate e.g. per
+  market), assets, links, stakeholders/approval process
+- Validation per step; the server validates again (incl. permissions and existing users/channel types)
+- Automatic creation of campaign, channels, assets, links and charter version 1
+- Charter view: readable, printable summary (sections 1–7) with version history
+- Edit charter → new version, changes to the campaign record and charter links
+- Draft restore, warning when leaving with unsaved changes
 
-### Phase 3 – Mindmap ✅
+### Phase 3 – Mind map ✅
 
-- Kampagnenseite `/kampagnen/[slug]` zeigt jetzt die Mindmap (React Flow): Kampagne → Awareness /
-  Consideration / Sales → Kanäle → Assets; Kanten in der Farbe der Funnel-Stufe
-- Knoten nach Status eingefärbt: Kampagne, Stufen und Kanäle mit Ampel und Fortschritt (x/y),
-  Assets nach Asset-Status, überfällige Assets rot umrandet, bald fällige orange markiert
-- Zoom, Pan, „Einpassen“, Ein-/Ausklappen von Stufen und Kanälen (wird pro Kampagne im Browser
-  gemerkt), „Alles ausklappen“ / „Assets einklappen“, Legende
-- Detail-Panel per Klick: Kampagne (Stufen, überfällige Assets, Links), Stufe (Kanäle), Kanal
-  (bearbeiten inkl. Stufe verschieben und KPI-Zielen, löschen, Assets), Asset (Status-Schnellwahl,
-  bearbeiten, löschen, Links); Navigation zwischen den Ebenen im Panel
-- „+“ an Stufe bzw. Kanal legt direkt einen Kanal bzw. ein Asset an
-- Direktlinks: `/kampagnen/<slug>?asset=<id>` bzw. `?kanal=<id>` öffnet das Element (klappt auf)
-- Viewer sehen alles, können aber nichts ändern; die Server Actions prüfen die Rechte zusätzlich
-- Die bisherige Spaltenansicht ist jetzt der Tab „Funnel“
+- `/campaigns/[slug]` shows the mind map (React Flow): campaign → Awareness / Consideration /
+  Sales → channels → assets; edges in the funnel stage colour
+- Nodes coloured by status: campaign, stages and channels with traffic light and progress (x/y),
+  assets by asset status, overdue assets outlined in red, due-soon ones marked in orange
+- Zoom, pan, "Fit view", collapsing stages and channels (remembered per campaign in the browser),
+  "Expand all" / "Collapse assets", legend
+- Detail panel on click: campaign (stages, overdue assets, links), stage (channels), channel (edit
+  incl. moving stage and KPI targets, delete, assets), asset (quick status, edit, delete, links);
+  navigation between levels in the panel
+- "+" on a stage or channel creates a channel or asset directly
+- Deep links: `/campaigns/<slug>?asset=<id>` or `?channel=<id>` opens the item (expanding its branch)
+- Viewers see everything but cannot change anything; server actions check permissions as well
+- The column view is the "Funnel" tab
 
 ### Phase 4 – Dashboard ✅
 
-- Kennzahlen: Kampagnen, Live, Kritisch (rot), überfällige und bald fällige Assets
-- Filter: Suche (Name/Marke/Produktlinie), Markt, Phase, Ampel (Mehrfachauswahl), Marke,
-  Produktlinie, Owner, Umsetzung, Zeitraum; Sortierung nach Start, Ende, Dringlichkeit oder Name;
-  „Filter zurücksetzen“
-- Kampagnenkarten mit Ampel, Phase, Zeitraum, Fortschritt, Markt-Badges, Funnel-Rollup und offenen
-  Terminen; Klick öffnet die Mindmap
-- Bereich „Kritisch“ mit Tabs „Überfällig“ / „Bald fällig“ über alle (gefilterten) Kampagnen;
-  jeder Eintrag springt direkt zum Asset in der Mindmap
-- Vergleich: bis zu 4 Kampagnen per „Vergleichen“ auswählen → `/vergleich` mit gemeinsamer
-  Zeitleiste (inkl. Heute-Markierung) und Gegenüberstellung von Eckdaten, Budget je Stufe,
-  Fortschritt und Ampel je Funnel-Stufe, überfälligen/bald fälligen Assets
+- Stats: campaigns, live, critical (red), overdue and due-soon assets
+- Filters: search (name/brand/product line), market, phase, status (multi-select), brand, product
+  line, owner, execution, period; sort by start, end, urgency or name; "Reset filters"
+- Campaign cards with traffic light, phase, period, progress, market badges, funnel rollup and open
+  deadlines; click opens the mind map
+- "Critical" section with tabs "Overdue" / "Due soon" across all (filtered) campaigns; each entry
+  jumps straight to the asset in the mind map
+- Comparison: select up to 4 campaigns via "Compare" → `/compare` with a shared timeline (incl.
+  today marker) and side-by-side key facts, budget per stage, progress and traffic light per funnel
+  stage, overdue/due-soon assets
 
-### Phase 5 – Links & Integrationen ✅
+### Phase 5 – Links & integrations ✅
 
-- Links an Kampagne, Kanal und Asset im Detail-Panel der Mindmap anlegen, bearbeiten, entfernen
-  (URL, automatisch erkannter oder gewählter Typ, Bezeichnung, optionales Vorschaubild)
-- Anzeige mit Typ-Icon bzw. Vorschaubild; Link-Anzahl an Kanal- und Asset-Knoten in der Mindmap
-- Neuer Tab „Performance“: Looker-Studio-Reports der Kampagne und ihrer Kanäle, eingebettet wenn
-  aktiviert, mit Hinweis und Link als Fallback; KPI-Ziele je Kanal (Ist-Werte folgen mit Phase 6)
-- Looker-Links aus der Launch Charter werden automatisch zur Einbettung markiert
-- Schema: `Link.embed` (Boolean) – nach dem Update einmal `npm run db:push` ausführen
+- Create, edit and remove links on campaigns, channels and assets in the mind map detail panel
+  (URL, detected or chosen type, label, optional preview image)
+- Display with type icon or preview image; link count on channel and asset nodes
+- "Performance" tab: Looker Studio reports of the campaign and its channels, embedded if enabled,
+  with a hint and link as fallback
+- Looker links from the launch charter are marked for embedding automatically
 
-### Phase 6 – Excel-Import ✅
+### Phase 6 – Excel import ✅
 
-- Import-Assistent unter Performance → „Report importieren“: Excel (.xlsx) oder CSV bis 10 MB,
-  Tabellenblatt-Auswahl, Vorschau mit markierten Spalten, Quelle, Berichtszeitraum (aus der
-  Datumsspalte vorgeschlagen), Kanal-Spalte bzw. Standard-Kanal, breites oder langes Format,
-  KPI-Namen je Spalte (mit Vorschlägen aus den KPI-Zielen), Zahlenformat
-- Prüfen mit klaren Fehlermeldungen (Zeile + Spalte) und Zusammenfassung je Kanal/KPI;
-  unbekannte Kanalnamen direkt zuordnen; Warnungen (Summenzeilen, Werte außerhalb des Zeitraums,
-  möglicher Doppel-Import)
-- Zuordnung pro Quelle speichern und bei wiederkehrenden Reports automatisch erkennen
-- Originaldatei wird gespeichert und ist in der Report-Liste herunterladbar; Reports löschen
-- Performance-Tab: Ziel vs. Ist je Kanal/KPI (Summe bzw. Ø, Zielerreichung), Diagramm
-  „Zielerreichung je KPI“ (Recharts, gemeinsame %-Achse, Farbe = Funnel-Stufe), Werte ohne Kanal
-- Funnel-Stufen-Farben nachjustiert, damit sie die Prüfungen für Farbfehlsichtigkeit, Kontrast
-  und Sättigung in Hell und Dunkel bestehen
-- Fiktive Beispiel-Reports zum Ausprobieren in `docs/beispiel-reports/`
+- Import wizard under Performance → "Import report": Excel (.xlsx) or CSV up to 10 MB, sheet
+  selection, preview with marked columns, source, reporting period (suggested from the date column),
+  channel column or default channel, wide or long layout, KPI name per column (suggestions from the
+  KPI targets), number format
+- Check with clear error messages (row + column) and a summary per channel/KPI; map unknown channel
+  names directly; warnings (total rows, values outside the period, possible double import)
+- Save the mapping per source and recognise recurring reports automatically
+- The original file is stored and can be downloaded from the report list; reports can be deleted
+- Performance tab: target vs. actual per channel/KPI (sum or average, achievement), chart "Target
+  achievement per KPI" (Recharts, shared % axis, colour = funnel stage), values without a channel
+- Fictional sample reports for trying it out in `docs/sample-reports/`
 
-### Als Nächstes
+### English UI ✅
 
-Phase 7 – Team-Features: Kommentare, Activity Log, Rollen.
+- The whole app is in English: texts, error messages, URLs (`/campaigns/…`, `/compare`, filter
+  parameters), stored status values (`IDEA`, `IN_PRODUCTION`, `APPROVAL`, `DONE` …), seed data and
+  sample reports. The report import still understands German reports.
+
+### Next
+
+Phase 7 – Team features: comments, activity log, roles.

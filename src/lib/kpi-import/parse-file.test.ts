@@ -10,9 +10,9 @@ describe("checkUpload", () => {
   });
 
   it("rejects other files with clear messages", () => {
-    expect(() => checkUpload("alt.xls", 10)).toThrow(/\.xlsx speichern/);
+    expect(() => checkUpload("alt.xls", 10)).toThrow(/as \.xlsx/);
     expect(() => checkUpload("bild.png", 10)).toThrow(UploadError);
-    expect(() => checkUpload("leer.csv", 0)).toThrow(/leer/);
+    expect(() => checkUpload("leer.csv", 0)).toThrow(/empty/);
     expect(() => checkUpload("gross.xlsx", 11 * 1024 * 1024)).toThrow(/10 MB/);
   });
 });
@@ -54,8 +54,8 @@ describe("parseUpload", () => {
   });
 
   it("rejects broken files", async () => {
-    await expect(parseUpload(Buffer.from("kein zip"), "kaputt.xlsx")).rejects.toThrow(/nicht gelesen/);
-    await expect(parseUpload(Buffer.from("\n\n"), "leer.csv")).rejects.toThrow(/keine Daten/);
+    await expect(parseUpload(Buffer.from("kein zip"), "kaputt.xlsx")).rejects.toThrow(/could not be read/);
+    await expect(parseUpload(Buffer.from("\n\n"), "leer.csv")).rejects.toThrow(/no data/);
   });
 
   it("decodes UTF-8 without touching it", () => {

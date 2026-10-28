@@ -19,7 +19,7 @@ import {
   type LinkFormValues,
 } from "@/lib/links";
 import type { FieldErrors } from "@/lib/validation/fields";
-import { createLink, deleteLink, updateLink, type LinkTarget } from "@/app/kampagnen/link-actions";
+import { createLink, deleteLink, updateLink, type LinkTarget } from "@/app/campaigns/link-actions";
 import { LinkIcon } from "@/components/links/link-icon";
 
 export interface LinkRecord {
@@ -73,12 +73,12 @@ export function LinkManager({
   if (!canEdit && links.length === 0) return null;
 
   const remove = (link: LinkRecord) => {
-    if (!window.confirm(`Link „${link.label ?? shortUrl(link.url)}“ entfernen?`)) return;
+    if (!window.confirm(`Remove link “${link.label ?? shortUrl(link.url)}”?`)) return;
     setError(null);
     startTransition(async () => {
       const result = await deleteLink(link.id);
       if (result.ok) router.refresh();
-      else setError(result.formError ?? "Entfernen fehlgeschlagen.");
+      else setError(result.formError ?? "Removing failed.");
     });
   };
 
@@ -96,7 +96,7 @@ export function LinkManager({
       </div>
 
       {links.length === 0 && editing !== "new" && (
-        <p className="text-sm text-muted-foreground">Noch keine Links, z. B. Frontify-Ordner, SharePoint oder Looker Studio.</p>
+        <p className="text-sm text-muted-foreground">No links yet, e.g. a Frontify folder, SharePoint or Looker Studio.</p>
       )}
 
       <ul className={cn("space-y-1", pending && "opacity-60")}>
@@ -107,7 +107,7 @@ export function LinkManager({
                 initial={linkFormFromRecord(link)}
                 submit={(values) => updateLink(link.id, values)}
                 onDone={() => setEditing(null)}
-                submitLabel="Speichern"
+                submitLabel="Save"
               />
             </li>
           ) : (
@@ -122,8 +122,8 @@ export function LinkManager({
                   <LinkIcon type={link.type} className="size-3.5" />
                   {LINK_TYPE_LABELS[link.type as keyof typeof LINK_TYPE_LABELS] ?? link.type}
                   {link.embed && (
-                    <span className="inline-flex items-center gap-0.5" title="Im Performance-Tab eingebettet">
-                      · <MonitorPlay className="size-3" /> eingebettet
+                    <span className="inline-flex items-center gap-0.5" title="Embedded in the performance tab">
+                      · <MonitorPlay className="size-3" /> embedded
                     </span>
                   )}
                   <span className="truncate">· {shortUrl(link.url)}</span>
@@ -131,10 +131,10 @@ export function LinkManager({
               </a>
               {canEdit && (
                 <span className="flex shrink-0 gap-0.5 opacity-100 sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
-                  <Button size="icon-sm" variant="ghost" aria-label="Link bearbeiten" onClick={() => setEditing(link.id)}>
+                  <Button size="icon-sm" variant="ghost" aria-label="Edit link" onClick={() => setEditing(link.id)}>
                     <Pencil />
                   </Button>
-                  <Button size="icon-sm" variant="ghost" aria-label="Link entfernen" onClick={() => remove(link)}>
+                  <Button size="icon-sm" variant="ghost" aria-label="Remove link" onClick={() => remove(link)}>
                     <Trash2 />
                   </Button>
                 </span>
@@ -150,7 +150,7 @@ export function LinkManager({
             initial={emptyLinkForm()}
             submit={(values) => createLink(target, values)}
             onDone={() => setEditing(null)}
-            submitLabel="Link hinzufügen"
+            submitLabel="Add link"
           />
         </div>
       )}
@@ -209,7 +209,7 @@ function LinkForm({
           setFormError(response.formError ?? null);
         }
       } catch {
-        setFormError("Speichern fehlgeschlagen. Bitte erneut versuchen.");
+        setFormError("Saving failed. Please try again.");
       }
     });
   };
@@ -229,13 +229,13 @@ function LinkForm({
       </Field>
       <div className="grid grid-cols-2 gap-3">
         <Field
-          label="Typ"
+          label="Type"
           htmlFor={`${prefix}-type`}
           error={errors.type}
-          hint={!values.type && values.url ? `Erkannt: ${LINK_TYPE_LABELS[detected]}` : undefined}
+          hint={!values.type && values.url ? `Detected: ${LINK_TYPE_LABELS[detected]}` : undefined}
         >
           <Select id={`${prefix}-type`} value={values.type} onChange={(e) => set("type", e.target.value)}>
-            <option value="">Automatisch</option>
+            <option value="">Automatic</option>
             {LINK_TYPES.map((t) => (
               <option key={t} value={t}>
                 {LINK_TYPE_LABELS[t]}
@@ -243,20 +243,20 @@ function LinkForm({
             ))}
           </Select>
         </Field>
-        <Field label="Bezeichnung" htmlFor={`${prefix}-label`} error={errors.label}>
+        <Field label="Label" htmlFor={`${prefix}-label`} error={errors.label}>
           <Input
             id={`${prefix}-label`}
             value={values.label}
-            placeholder="z. B. Key Visuals"
+            placeholder="e.g. key visuals"
             onChange={(e) => set("label", e.target.value)}
           />
         </Field>
       </div>
       <Field
-        label="Vorschaubild (optional)"
+        label="Preview image (optional)"
         htmlFor={`${prefix}-thumb`}
         error={errors.thumbnailUrl}
-        hint="Bild-URL, z. B. aus Frontify „Link kopieren“"
+        hint="Image URL, e.g. from Frontify “Copy link”"
       >
         <Input
           id={`${prefix}-thumb`}
@@ -276,7 +276,7 @@ function LinkForm({
               checked={values.embed}
               onChange={(e) => set("embed", e.target.checked)}
             />
-            Im Performance-Tab einbetten
+            Embed in the performance tab
           </label>
           {errors.embed && <p className="mt-1 text-xs font-medium text-status-red">{errors.embed}</p>}
         </div>
@@ -292,7 +292,7 @@ function LinkForm({
           {submitLabel}
         </Button>
         <Button type="button" size="sm" variant="ghost" onClick={onDone} disabled={pending}>
-          Abbrechen
+          Cancel
         </Button>
       </div>
     </form>

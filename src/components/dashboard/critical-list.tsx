@@ -13,11 +13,11 @@ import { STAGE_STYLES } from "@/components/stage-styles";
 const PREVIEW = 8;
 
 function relativeDue(days: number): string {
-  if (days < -1) return `seit ${-days} Tagen überfällig`;
-  if (days === -1) return "seit gestern überfällig";
-  if (days === 0) return "heute fällig";
-  if (days === 1) return "morgen fällig";
-  return `in ${days} Tagen fällig`;
+  if (days < -1) return `overdue by ${-days} days`;
+  if (days === -1) return "overdue since yesterday";
+  if (days === 0) return "due today";
+  if (days === 1) return "due tomorrow";
+  return `due in ${days} days`;
 }
 
 export function CriticalList({ overdue, dueSoon }: { overdue: CriticalAsset[]; dueSoon: CriticalAsset[] }) {
@@ -27,17 +27,17 @@ export function CriticalList({ overdue, dueSoon }: { overdue: CriticalAsset[]; d
   const visible = expanded ? items : items.slice(0, PREVIEW);
 
   const tabs = [
-    { id: "overdue" as const, label: "Überfällig", count: overdue.length, icon: AlertTriangle, color: "text-status-red" },
-    { id: "dueSoon" as const, label: "Bald fällig", count: dueSoon.length, icon: Clock, color: "text-status-yellow" },
+    { id: "overdue" as const, label: "Overdue", count: overdue.length, icon: AlertTriangle, color: "text-status-red" },
+    { id: "dueSoon" as const, label: "Due soon", count: dueSoon.length, icon: Clock, color: "text-status-yellow" },
   ];
 
   return (
     <section aria-labelledby="critical-title" className="rounded-xl border bg-card">
       <div className="border-b px-4 pt-3">
         <h2 id="critical-title" className="font-semibold">
-          Kritisch
+          Critical
         </h2>
-        <div role="tablist" aria-label="Kritische Assets" className="mt-2 flex gap-1">
+        <div role="tablist" aria-label="Critical assets" className="mt-2 flex gap-1">
           {tabs.map((t) => (
             <button
               key={t.id}
@@ -64,14 +64,14 @@ export function CriticalList({ overdue, dueSoon }: { overdue: CriticalAsset[]; d
       <div role="tabpanel" className="p-2">
         {items.length === 0 ? (
           <p className="px-2 py-4 text-sm text-muted-foreground">
-            {tab === "overdue" ? "Keine überfälligen Assets." : "Nichts in den nächsten Tagen fällig."}
+            {tab === "overdue" ? "No overdue assets." : "Nothing due in the next few days."}
           </p>
         ) : (
           <ul className="space-y-0.5">
             {visible.map((a) => (
               <li key={a.assetId}>
                 <Link
-                  href={`/kampagnen/${a.campaignSlug}?asset=${a.assetId}`}
+                  href={`/campaigns/${a.campaignSlug}?asset=${a.assetId}`}
                   className={cn(
                     "block rounded-md border-l-2 px-2.5 py-2 hover:bg-muted",
                     STAGE_STYLES[a.funnelStage as FunnelStage]?.border ?? "border-border",
@@ -104,7 +104,7 @@ export function CriticalList({ overdue, dueSoon }: { overdue: CriticalAsset[]; d
             onClick={() => setExpanded((e) => !e)}
             className="mt-1 w-full rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
           >
-            {expanded ? "Weniger anzeigen" : `Alle ${items.length} anzeigen`}
+            {expanded ? "Show less" : `Show all ${items.length}`}
           </button>
         )}
       </div>

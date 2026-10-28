@@ -3,8 +3,10 @@
 //
 // Two table layouts are supported:
 // - "long":  one row per value, with a KPI-name column and a value column
-//            (Datum | Kanal | KPI | Wert)
-// - "wide":  one column per KPI (Datum | Kanal | Impressions | Klicks | …)
+//            (Date | Channel | KPI | Value)
+// - "wide":  one column per KPI (Date | Channel | Impressions | Clicks | …)
+//
+// Header detection and column hints understand English and German reports.
 
 import { z } from "zod";
 
@@ -15,7 +17,7 @@ export interface RawTable {
   /** Data rows (same length as headers); `rowNumbers` holds their 1-based sheet row numbers. */
   rows: CellValue[][];
   rowNumbers: number[];
-  /** Rows dropped as totals ("Gesamt", "Summe", "Total"), as sheet row numbers. */
+  /** Rows dropped as totals ("Total", "Gesamt", "Summe"), as sheet row numbers. */
   skippedTotals: number[];
 }
 
@@ -26,7 +28,7 @@ const TOTAL_ROW = /^(gesamt|summe|total|grand total|insgesamt)\b/i;
 /**
  * Index of the header row: the first row that is at least half as wide (in
  * filled cells) as the widest of the first rows. Skips title rows such as
- * "Report Agentur X" above the actual table.
+ * "Report Agency X" above the actual table.
  */
 function findHeaderIndex(sheetRows: CellValue[][]): number {
   const filled = sheetRows.slice(0, 30).map((row) => row.filter((c) => !isEmpty(c)).length);
@@ -39,7 +41,7 @@ function findHeaderIndex(sheetRows: CellValue[][]): number {
 /**
  * Extracts a table from raw sheet rows: title rows above the header are
  * skipped, as are fully empty rows and total rows. Header names are trimmed and
- * made unique ("Klicks", "Klicks (2)"); empty headers become "Spalte N".
+ * made unique ("Clicks", "Clicks (2)"); empty headers become "Column N".
  */
 export function extractTable(sheetRows: CellValue[][]): RawTable {
   const headerIndex = findHeaderIndex(sheetRows);
@@ -49,7 +51,7 @@ export function extractTable(sheetRows: CellValue[][]): RawTable {
   const width = Math.max(...sheetRows.slice(headerIndex).map((r) => r.length));
   const seen = new Map<string, number>();
   const headers = Array.from({ length: width }, (_, i) => {
-    const base = cellToString(rawHeaders[i] ?? null).trim() || `Spalte ${i + 1}`;
+    const base = cellToString(rawHeaders[i] ?? null).trim() || `Column ${i + 1}`;
     const count = (seen.get(base) ?? 0) + 1;
     seen.set(base, count);
     return count === 1 ? base : `${base} (${count})`;
@@ -72,7 +74,7 @@ export function extractTable(sheetRows: CellValue[][]): RawTable {
 
   // Drop trailing columns that are empty everywhere and have no real header.
   let keep = width;
-  while (keep > 0 && headers[keep - 1].startsWith("Spalte ") && rows.every((r) => isEmpty(r[keep - 1]))) keep--;
+  while (keep > 0 && headers[keep - 1].startsWith("Column ") && rows.every((r) => isEmpty(r[keep - 1]))) keep--;
   return {
     headers: headers.slice(0, keep),
     rows: rows.map((r) => r.slice(0, keep)),
@@ -317,17 +319,17 @@ export function applyMapping(
 
   // Structural checks first: every referenced column must exist.
   const missing = mappingColumns(mapping).filter((c) => !table.headers.includes(c));
-  for (const c of missing) addError({ column: c, message: `Spalte „${c}“ fehlt in der Datei.` });
+  for (const c of missing) addError({ column: c, message: `Column “${c}” is missing from the file.` });
   if (mapping.layout === "long" && (!mapping.kpiColumn || !mapping.valueColumn)) {
-    addError({ message: "Bitte die Spalten für KPI und Wert zuordnen." });
+    addError({ message: "Please map the KPI and value columns." });
   }
   if (mapping.layout === "wide" && mapping.kpiColumns.length === 0) {
-    addError({ message: "Bitte mindestens eine Spalte als KPI auswählen." });
+    addError({ message: "Please select at least one KPI column." });
   }
   const empty: ImportResult = { values: [], errors, warnings, unknownChannels: [], emptyCells: 0, dateRange: null };
   if (errors.length > 0) return empty;
   if (table.rows.length === 0) {
-    errors.push({ message: "Die Tabelle enthält keine Datenzeilen." });
+    errors.push({ message: "The table contains no data rows." });
     return empty;
   }
 
@@ -348,7 +350,7 @@ export function applyMapping(
       date = parseReportDate(row[dateIdx]);
       if (!date) {
         errorCount++;
-        addError({ rowNumber, column: mapping.dateColumn, message: `Ungültiges Datum „${cellToString(row[dateIdx])}“.` });
+        addError({ rowNumber, column: mapping.dateColumn, message: `Invalid date “${cellToString(row[dateIdx])}”.` });
         return;
       }
       seenDates.push(date);
@@ -386,13 +388,13 @@ export function applyMapping(
       }
       if (!cell.kpiName) {
         errorCount++;
-        addError({ rowNumber, column: mapping.kpiColumn, message: "KPI-Name fehlt." });
+        addError({ rowNumber, column: mapping.kpiColumn, message: "KPI name missing." });
         continue;
       }
       const value = parseReportNumber(cell.raw, mapping.numberFormat);
       if (value == null) {
         errorCount++;
-        addError({ rowNumber, column: cell.column, message: `„${cellToString(cell.raw)}“ ist keine gültige Zahl.` });
+        addError({ rowNumber, column: cell.column, message: `“${cellToString(cell.raw)}” is not a valid number.` });
         continue;
       }
       values.push({ rowNumber, channelId, kpiName: cell.kpiName, value, unit: cell.unit, date });
@@ -403,17 +405,17 @@ export function applyMapping(
   if (unknownChannels.length > 0) {
     errors.unshift({
       column: mapping.channelColumn,
-      message: `Kanal nicht zugeordnet: ${unknownChannels.map((c) => `„${c}“`).join(", ")}.`,
+      message: `Unmapped channel: ${unknownChannels.map((c) => `“${c}”`).join(", ")}.`,
     });
   }
   if (errorCount > MAX_ISSUES) {
-    errors.push({ message: `… und ${errorCount - MAX_ISSUES} weitere Fehler.` });
+    errors.push({ message: `… and ${errorCount - MAX_ISSUES} more errors.` });
   }
   if (table.skippedTotals.length > 0) {
-    warnings.push({ message: `${table.skippedTotals.length} Summenzeile(n) übersprungen (Zeile ${table.skippedTotals.join(", ")}).` });
+    warnings.push({ message: `Skipped ${table.skippedTotals.length} total row(s) (row ${table.skippedTotals.join(", ")}).` });
   }
   if (!mapping.channelColumn && !context.defaultChannelId) {
-    warnings.push({ message: "Ohne Kanal-Zuordnung zählen die Werte nur für die Kampagne, nicht für einzelne Kanäle." });
+    warnings.push({ message: "Without a channel mapping, values count for the campaign only, not for individual channels." });
   }
 
   const dateRange =

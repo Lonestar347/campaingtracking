@@ -1,9 +1,9 @@
 // Seed data: master data (channel types), demo users and three fictional
 // example campaigns. No real campaign data. All dates are relative to the day
 // the seed runs, so the example traffic lights stay meaningful:
-//   1. "Herbstkampagne Hund"   – running, one asset overdue      -> RED / Live
-//   2. "Winter-Sampling Katze" – starts soon, briefings due      -> YELLOW / In Arbeit
-//   3. "Frühjahrsaktion Shop"  – far in the future, only ideas   -> GREEN / Planung
+//   1. "Autumn Campaign Dog"   – running, one asset overdue      -> RED / Live
+//   2. "Winter Sampling Cat"   – starts soon, briefings due      -> YELLOW / In progress
+//   3. "Spring Shop Promotion" – far in the future, only ideas   -> GREEN / Planning
 //
 // Run with: npm run db:seed (wipes existing data first).
 
@@ -61,114 +61,114 @@ interface CampaignSeed {
 }
 
 const USERS = [
-  { key: "anna", name: "Anna Beispiel", email: "anna.beispiel@example.com", role: "admin", team: "Brand" },
-  { key: "ben", name: "Ben Muster", email: "ben.muster@example.com", role: "editor", team: "Design" },
-  { key: "clara", name: "Clara Probe", email: "clara.probe@example.com", role: "editor", team: "Content" },
+  { key: "anna", name: "Anna Sample", email: "anna.sample@example.com", role: "admin", team: "Brand" },
+  { key: "ben", name: "Ben Mock", email: "ben.mock@example.com", role: "editor", team: "Design" },
+  { key: "clara", name: "Clara Draft", email: "clara.draft@example.com", role: "editor", team: "Content" },
   { key: "david", name: "David Test", email: "david.test@example.com", role: "editor", team: "Social Media" },
   { key: "eva", name: "Eva Demo", email: "eva.demo@example.com", role: "editor", team: "Digital Marketplaces" },
-  { key: "felix", name: "Felix Platzhalter", email: "felix.platzhalter@example.com", role: "viewer", team: "Sales DE" },
+  { key: "felix", name: "Felix Placeholder", email: "felix.placeholder@example.com", role: "viewer", team: "Sales DE" },
 ] as const;
 
 type UserKey = (typeof USERS)[number]["key"];
 
 const CAMPAIGNS: CampaignSeed[] = [
   {
-    name: "Herbstkampagne Hund",
-    slug: "herbstkampagne-hund",
-    description: "Fiktive Beispielkampagne: Bekanntheit einer Trockenfutter-Linie für Hunde steigern.",
-    brand: "Beispielmarke",
-    productLine: "Hund Trockenfutter",
+    name: "Autumn Campaign Dog",
+    slug: "autumn-campaign-dog",
+    description: "Fictional sample campaign: raise awareness of a dry food line for dogs.",
+    brand: "Sample Brand",
+    productLine: "Dog Dry Food",
     markets: ["DE", "AT"],
     start: -20,
     end: 40,
     budgetCents: 25_000_000,
     owner: "anna",
-    partners: ["Beispiel-Agentur GmbH", "Muster Film Produktion"],
+    partners: ["Sample Agency Ltd", "Mock Film Production"],
     executionType: "mixed",
     charter: {
       strategy: {
-        objective: "Markenbekanntheit in der Zielgruppe um 10 Prozentpunkte steigern",
-        targetAudience: "Hundehalter:innen 25–55, qualitätsorientiert",
-        keyMessage: "Gute Ernährung, die man sieht.",
-        insight: "Halter:innen erkennen Qualität am Fell und an der Energie ihres Hundes.",
-        reasonToBelieve: "Ausgewählte Zutaten, entwickelt mit Tierernährungsexpert:innen (fiktiv).",
+        objective: "Increase brand awareness in the target group by 10 percentage points",
+        targetAudience: "Dog owners aged 25–55, quality-minded",
+        keyMessage: "Good nutrition you can see.",
+        insight: "Owners recognise quality by their dog's coat and energy.",
+        reasonToBelieve: "Selected ingredients, developed with animal nutrition experts (fictional).",
       },
       budget: {
         totalCents: 25_000_000,
         byFunnelStageCents: { AWARENESS: 15_000_000, CONSIDERATION: 5_000_000, SALES: 5_000_000 },
       },
       links: {
-        frontify: "https://example.frontify.com/folder/herbst-hund",
-        sharepoint: "https://example.sharepoint.com/sites/marketing/herbst-hund",
-        lookerStudio: "https://lookerstudio.google.com/reporting/example-herbst-hund",
+        frontify: "https://example.frontify.com/folder/autumn-dog",
+        sharepoint: "https://example.sharepoint.com/sites/marketing/autumn-dog",
+        lookerStudio: "https://lookerstudio.google.com/reporting/example-autumn-dog",
       },
       stakeholders: [
-        { team: "Brand", people: ["Anna Beispiel"], role: "Lead" },
-        { team: "Design", people: ["Ben Muster"], role: "Kreation" },
+        { team: "Brand", people: ["Anna Sample"], role: "Lead" },
+        { team: "Design", people: ["Ben Mock"], role: "Creative" },
         { team: "Social Media", people: ["David Test"] },
-        { team: "Sales DE", people: ["Felix Platzhalter"], role: "Handelsumsetzung" },
+        { team: "Sales DE", people: ["Felix Placeholder"], role: "Retail execution" },
       ],
-      approvalProcess: "Kreation → Brand Lead → Geschäftsführung (fiktiv)",
+      approvalProcess: "Creative → brand lead → management (fictional)",
     },
     links: [
-      { type: "frontify", url: "https://example.frontify.com/folder/herbst-hund", label: "Frontify-Ordner" },
-      { type: "sharepoint", url: "https://example.sharepoint.com/sites/marketing/herbst-hund", label: "SharePoint" },
+      { type: "frontify", url: "https://example.frontify.com/folder/autumn-dog", label: "Frontify folder" },
+      { type: "sharepoint", url: "https://example.sharepoint.com/sites/marketing/autumn-dog", label: "SharePoint" },
       {
         type: "looker_studio",
-        url: "https://lookerstudio.google.com/reporting/example-herbst-hund",
-        label: "Performance-Report",
+        url: "https://lookerstudio.google.com/reporting/example-autumn-dog",
+        label: "Performance report",
         embed: true,
       },
     ],
     channels: [
       {
         type: "tv_ctv",
-        name: "CTV-Spot",
+        name: "CTV spot",
         owner: "anna",
         start: -20,
         end: 30,
-        kpiTargets: { Impressions: 5_000_000, "Completion Rate %": 70 },
+        kpiTargets: { Impressions: 5_000_000, "Completion rate %": 70 },
         assets: [
-          { title: "TV-Spot 20s", assetType: "VIDEO", format: "16:9, 20s", status: "LIVE", due: -25, owner: "ben", approver: "anna" },
-          { title: "Cutdown 6s", assetType: "VIDEO", format: "16:9, 6s", status: "FERTIG", due: -15, owner: "ben", approver: "anna" },
+          { title: "TV spot 20s", assetType: "VIDEO", format: "16:9, 20s", status: "LIVE", due: -25, owner: "ben", approver: "anna" },
+          { title: "Cutdown 6s", assetType: "VIDEO", format: "16:9, 6s", status: "DONE", due: -15, owner: "ben", approver: "anna" },
         ],
       },
       {
         type: "social_reach_paid",
         owner: "david",
-        kpiTargets: { Reichweite: 2_000_000, CPM: 6 },
+        kpiTargets: { Reach: 2_000_000, CPM: 6 },
         assets: [
-          { title: "Reel 9:16 – Fell", assetType: "VIDEO", format: "9:16, 15s", status: "LIVE", due: -18, owner: "david", approver: "anna" },
-          { title: "Carousel Zutaten", assetType: "CAROUSEL", format: "1:1, 5 Slides", status: "IN_PRODUKTION", due: -3, owner: "ben", approver: "anna" },
-          { title: "Story-Set Woche 4", assetType: "STORY", format: "9:16", status: "BRIEFING", due: 12, owner: "david" },
+          { title: "Reel 9:16 – coat", assetType: "VIDEO", format: "9:16, 15s", status: "LIVE", due: -18, owner: "david", approver: "anna" },
+          { title: "Carousel ingredients", assetType: "CAROUSEL", format: "1:1, 5 slides", status: "IN_PRODUCTION", due: -3, owner: "ben", approver: "anna" },
+          { title: "Story set week 4", assetType: "STORY", format: "9:16", status: "BRIEFING", due: 12, owner: "david" },
         ],
       },
       {
         type: "website_content",
         owner: "clara",
-        kpiTargets: { Sessions: 40_000, "Verweildauer s": 90 },
+        kpiTargets: { Sessions: 40_000, "Time on page (s)": 90 },
         assets: [
-          { title: "Ratgeber: Fellpflege durch Ernährung", assetType: "TEXT", status: "FREIGABE", due: 3, owner: "clara", approver: "anna" },
-          { title: "Landingpage-Header", assetType: "STATIC", format: "1920x600", status: "FERTIG", due: -21, owner: "ben" },
+          { title: "Guide: coat care through nutrition", assetType: "TEXT", status: "APPROVAL", due: 3, owner: "clara", approver: "anna" },
+          { title: "Landing page header", assetType: "STATIC", format: "1920x600", status: "DONE", due: -21, owner: "ben" },
         ],
       },
       {
         type: "pos_retail",
         owner: "felix",
-        kpiTargets: { "Platzierungen": 300 },
+        kpiTargets: { Placements: 300 },
         assets: [
-          { title: "Regalstopper", assetType: "PRINT", format: "DIN A5", status: "FERTIG", due: -30, owner: "ben", approver: "felix" },
-          { title: "Aufsteller", assetType: "PRINT", format: "Display 60x180", status: "LIVE", due: -22, owner: "ben", approver: "felix" },
+          { title: "Shelf stopper", assetType: "PRINT", format: "A5", status: "DONE", due: -30, owner: "ben", approver: "felix" },
+          { title: "Display stand", assetType: "PRINT", format: "Display 60x180", status: "LIVE", due: -22, owner: "ben", approver: "felix" },
         ],
       },
     ],
   },
   {
-    name: "Winter-Sampling Katze",
-    slug: "winter-sampling-katze",
-    description: "Fiktive Beispielkampagne: Probierpakete für eine Nassfutter-Linie für Katzen.",
-    brand: "Beispielmarke",
-    productLine: "Katze Nassfutter",
+    name: "Winter Sampling Cat",
+    slug: "winter-sampling-cat",
+    description: "Fictional sample campaign: trial packs for a wet food line for cats.",
+    brand: "Sample Brand",
+    productLine: "Cat Wet Food",
     markets: ["DE", "PL"],
     start: 10,
     end: 70,
@@ -178,23 +178,23 @@ const CAMPAIGNS: CampaignSeed[] = [
     executionType: "inhouse",
     charter: {
       strategy: {
-        objective: "20.000 Probierpakete verteilen, 5 % Wiederkaufrate",
-        targetAudience: "Katzenhalter:innen, die die Marke noch nicht kennen",
-        keyMessage: "Probieren geht über Studieren.",
-        insight: "Katzen sind wählerisch – Halter:innen wechseln Futter nur nach einem Test.",
-        reasonToBelieve: "Hohe Akzeptanz in internen Geschmackstests (fiktiv).",
+        objective: "Distribute 20,000 trial packs, 5% repurchase rate",
+        targetAudience: "Cat owners who do not know the brand yet",
+        keyMessage: "Try it and taste the difference.",
+        insight: "Cats are picky – owners only switch food after a trial.",
+        reasonToBelieve: "High acceptance in internal taste tests (fictional).",
       },
       budget: { totalCents: 8_000_000 },
       links: {},
       stakeholders: [
-        { team: "Content", people: ["Clara Probe"], role: "Lead" },
+        { team: "Content", people: ["Clara Draft"], role: "Lead" },
         { team: "Social Media", people: ["David Test"] },
-        { team: "Sales International", people: [], role: "Abstimmung PL" },
+        { team: "Sales International", people: [], role: "PL coordination" },
       ],
-      approvalProcess: "Content Lead → Brand",
+      approvalProcess: "Content lead → brand",
     },
     links: [
-      { type: "sharepoint", url: "https://example.sharepoint.com/sites/marketing/winter-katze", label: "Projektordner" },
+      { type: "sharepoint", url: "https://example.sharepoint.com/sites/marketing/winter-cat", label: "Project folder" },
     ],
     channels: [
       {
@@ -202,49 +202,49 @@ const CAMPAIGNS: CampaignSeed[] = [
         owner: "clara",
         start: 10,
         end: 60,
-        kpiTargets: { "Verteilte Pakete": 20_000 },
+        kpiTargets: { "Samples distributed": 20_000 },
         assets: [
-          { title: "Sampling-Box Design", assetType: "PRINT", format: "Faltschachtel", status: "BRIEFING", due: 4, owner: "ben", approver: "clara" },
-          { title: "Beileger-Flyer", assetType: "PRINT", format: "DIN lang", status: "IDEE", due: 6, owner: "clara" },
+          { title: "Sampling box design", assetType: "PRINT", format: "Folding box", status: "BRIEFING", due: 4, owner: "ben", approver: "clara" },
+          { title: "Insert flyer", assetType: "PRINT", format: "DL", status: "IDEA", due: 6, owner: "clara" },
         ],
       },
       {
         type: "newsletter_crm",
         owner: "clara",
-        kpiTargets: { "Öffnungsrate %": 35, Klicks: 3_000 },
+        kpiTargets: { "Open rate %": 35, Clicks: 3_000 },
         assets: [
-          { title: "Newsletter Anmeldung Probierpaket", assetType: "TEXT", status: "IN_PRODUKTION", due: 9, owner: "clara" },
+          { title: "Newsletter: trial pack sign-up", assetType: "TEXT", status: "IN_PRODUCTION", due: 9, owner: "clara" },
         ],
       },
       {
         type: "influencer",
         owner: "david",
-        kpiTargets: { Reichweite: 500_000 },
+        kpiTargets: { Reach: 500_000 },
         assets: [
-          { title: "Unboxing-Briefing", assetType: "TEXT", status: "BRIEFING", due: 15, owner: "david" },
-          { title: "Influencer-Kooperation PL", assetType: "VIDEO", status: "ABGEBROCHEN", due: 2, owner: "david" },
+          { title: "Unboxing briefing", assetType: "TEXT", status: "BRIEFING", due: 15, owner: "david" },
+          { title: "Influencer partnership PL", assetType: "VIDEO", status: "CANCELLED", due: 2, owner: "david" },
         ],
       },
     ],
   },
   {
-    name: "Frühjahrsaktion Shop",
-    slug: "fruehjahrsaktion-shop",
-    description: "Fiktive Beispielkampagne: Abverkaufsaktion über Onlineshop und Marktplätze.",
-    brand: "Beispielmarke",
+    name: "Spring Shop Promotion",
+    slug: "spring-shop-promotion",
+    description: "Fictional sample campaign: sales promotion via online shop and marketplaces.",
+    brand: "Sample Brand",
     productLine: "Snacks",
     markets: ["DE", "AT", "PL"],
     start: 60,
     end: 120,
     budgetCents: 4_500_000,
     owner: "eva",
-    partners: ["Performance-Agentur Beispiel"],
+    partners: ["Sample Performance Agency"],
     executionType: "agency",
     charter: {
       strategy: {
-        objective: "Umsatz Snacks online +15 % gegenüber Vorjahreszeitraum",
-        targetAudience: "Bestandskund:innen im Onlinehandel",
-        keyMessage: "Belohnung für jeden Spaziergang.",
+        objective: "Online snack revenue +15% vs. the prior-year period",
+        targetAudience: "Existing online customers",
+        keyMessage: "A reward for every walk.",
       },
       budget: {
         totalCents: 4_500_000,
@@ -253,7 +253,7 @@ const CAMPAIGNS: CampaignSeed[] = [
       links: {},
       stakeholders: [
         { team: "Digital Marketplaces", people: ["Eva Demo"], role: "Lead" },
-        { team: "Design", people: ["Ben Muster"] },
+        { team: "Design", people: ["Ben Mock"] },
       ],
     },
     links: [],
@@ -262,22 +262,22 @@ const CAMPAIGNS: CampaignSeed[] = [
         type: "digital_marketplaces",
         name: "Amazon & Zooplus",
         owner: "eva",
-        kpiTargets: { Umsatz: 120_000, ROAS: 4 },
+        kpiTargets: { Revenue: 120_000, ROAS: 4 },
         assets: [
-          { title: "A+ Content Snacks", assetType: "STATIC", status: "IDEE", due: 45, owner: "eva" },
-          { title: "Sponsored Brands Video", assetType: "VIDEO", format: "16:9, 15s", status: "IDEE", due: 50, owner: "eva" },
+          { title: "A+ content snacks", assetType: "STATIC", status: "IDEA", due: 45, owner: "eva" },
+          { title: "Sponsored Brands video", assetType: "VIDEO", format: "16:9, 15s", status: "IDEA", due: 50, owner: "eva" },
         ],
       },
       {
         type: "promotions",
         owner: "eva",
-        kpiTargets: { "Eingelöste Gutscheine": 2_500 },
-        assets: [{ title: "Gutschein-Mechanik", assetType: "TEXT", status: "IDEE", due: 40, owner: "eva" }],
+        kpiTargets: { "Redeemed vouchers": 2_500 },
+        assets: [{ title: "Voucher mechanics", assetType: "TEXT", status: "IDEA", due: 40, owner: "eva" }],
       },
       {
         // Example of overriding the default funnel stage (Sales -> Consideration)
         type: "online_shop",
-        name: "Onlineshop Ratgeber-Teaser",
+        name: "Online shop guide teaser",
         stage: "CONSIDERATION",
         owner: "clara",
         assets: [],
@@ -353,7 +353,7 @@ async function main() {
           create: {
             currentVersion: 1,
             data: charterData,
-            versions: { create: { version: 1, data: charterData, createdById: ownerId, changeNote: "Erstanlage" } },
+            versions: { create: { version: 1, data: charterData, createdById: ownerId, changeNote: "Initial version" } },
           },
         },
         links: { create: c.links },
@@ -398,13 +398,13 @@ async function main() {
   }
 
   // A couple of comments and status changes so the team features have data.
-  const overdue = await db.asset.findFirstOrThrow({ where: { title: "Carousel Zutaten" } });
+  const overdue = await db.asset.findFirstOrThrow({ where: { title: "Carousel ingredients" } });
   await db.comment.create({
     data: {
       entityType: "asset",
       entityId: overdue.id,
       authorId: userId("anna")!,
-      body: "Bitte bis Ende der Woche fertigstellen – die Woche-3-Schaltung wartet darauf.",
+      body: "Please finish by the end of the week – the week 3 placement depends on it.",
     },
   });
   await db.activityLog.create({
@@ -412,7 +412,7 @@ async function main() {
       entityType: "asset",
       entityId: overdue.id,
       action: "status_changed",
-      details: { from: "BRIEFING", to: "IN_PRODUKTION" },
+      details: { from: "BRIEFING", to: "IN_PRODUCTION" },
       userId: userId("ben"),
     },
   });

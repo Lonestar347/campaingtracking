@@ -42,7 +42,7 @@ describe("extractTable", () => {
   });
 
   it("names empty header cells", () => {
-    expect(extractTable([["A", null, "C"], [1, 2, 3]]).headers).toEqual(["A", "Spalte 2", "C"]);
+    expect(extractTable([["A", null, "C"], [1, 2, 3]]).headers).toEqual(["A", "Column 2", "C"]);
   });
 
   it("handles single-column tables", () => {
@@ -149,7 +149,7 @@ describe("applyMapping", () => {
 
   it("maps rows to values, reporting invalid numbers with row numbers", () => {
     const result = applyMapping(wideTable, mapping, { channels });
-    expect(result.errors).toEqual([{ rowNumber: 4, column: "impressions", message: "„x“ ist keine gültige Zahl." }]);
+    expect(result.errors).toEqual([{ rowNumber: 4, column: "impressions", message: "“x” is not a valid number." }]);
     expect(result.values).toHaveLength(7);
     expect(result.values[0]).toEqual({
       rowNumber: 2,
@@ -161,7 +161,7 @@ describe("applyMapping", () => {
     });
     expect(result.values.filter((v) => v.channelId === "c-tv").map((v) => v.kpiName)).toEqual(["Impressions", "CTR %"]);
     expect(result.emptyCells).toBe(1);
-    expect(result.warnings[0].message).toMatch(/1 Summenzeile/);
+    expect(result.warnings[0].message).toMatch(/Skipped 1 total row/);
     expect(result.dateRange).toEqual({ from: day("2026-11-01"), to: day("2026-11-03") });
   });
 
@@ -176,7 +176,7 @@ describe("applyMapping", () => {
     const first = applyMapping(table, m, { channels });
     expect(first.unknownChannels).toEqual(["Meta Ads", "YouTube"]);
     expect(first.dateRange).toBeNull();
-    expect(first.errors[0].message).toBe("Kanal nicht zugeordnet: „Meta Ads“, „YouTube“.");
+    expect(first.errors[0].message).toBe("Unmapped channel: “Meta Ads”, “YouTube”.");
 
     const second = applyMapping(
       table,
@@ -196,13 +196,13 @@ describe("applyMapping", () => {
 
   it("reports missing columns and invalid dates", () => {
     const missing = applyMapping(wideTable, { ...mapping, dateColumn: "Tag" }, { channels });
-    expect(missing.errors).toEqual([{ column: "Tag", message: "Spalte „Tag“ fehlt in der Datei." }]);
+    expect(missing.errors).toEqual([{ column: "Tag", message: "Column “Tag” is missing from the file." }]);
 
     const table = extractTable([["Datum", "Klicks"], ["gestern", 1], ["05.11.2026", "x"]]);
     const badDate = applyMapping(table, suggestMapping(table), { channels });
     expect(badDate.errors).toEqual([
-      { rowNumber: 2, column: "Datum", message: "Ungültiges Datum „gestern“." },
-      { rowNumber: 3, column: "Klicks", message: "„x“ ist keine gültige Zahl." },
+      { rowNumber: 2, column: "Datum", message: "Invalid date “gestern”." },
+      { rowNumber: 3, column: "Klicks", message: "“x” is not a valid number." },
     ]);
     // The period suggestion uses valid dates even from rows with other errors.
     expect(badDate.dateRange).toEqual({ from: day("2026-11-05"), to: day("2026-11-05") });
@@ -210,7 +210,7 @@ describe("applyMapping", () => {
 
   it("requires KPI and value columns in the long layout", () => {
     const result = applyMapping(wideTable, { ...mapping, layout: "long", kpiColumns: [] }, { channels });
-    expect(result.errors[0].message).toMatch(/KPI und Wert/);
+    expect(result.errors[0].message).toMatch(/KPI and value columns/);
   });
 
   it("summarizes values per channel and KPI", () => {

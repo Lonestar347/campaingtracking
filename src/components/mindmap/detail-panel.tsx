@@ -16,7 +16,7 @@ import {
   type FunnelStage,
 } from "@/lib/domain/enums";
 import { formatDate, formatDateRange } from "@/lib/dates";
-import { formatGermanNumber } from "@/lib/format";
+import { formatNumber } from "@/lib/format";
 import { isOverdue, rollupCampaign, summarizeAssets } from "@/lib/status";
 import { parseKpiTargets } from "@/lib/validation";
 import {
@@ -34,7 +34,7 @@ import {
   setAssetStatus,
   updateAsset,
   updateChannel,
-} from "@/app/kampagnen/entity-actions";
+} from "@/app/campaigns/entity-actions";
 import { ProgressBar, TrafficLightBadge } from "@/components/status-badges";
 import { STAGE_STYLES } from "@/components/stage-styles";
 import { AssetStatusChip } from "@/components/asset-status";
@@ -77,7 +77,7 @@ function PanelHeader({
         <p className="text-xs font-medium text-muted-foreground">{eyebrow}</p>
         <h2 className="text-base font-semibold leading-tight break-words">{title}</h2>
       </div>
-      <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Panel schließen">
+      <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Close panel">
         <X />
       </Button>
     </div>
@@ -149,7 +149,7 @@ function CampaignPanel({ campaign, canEdit, onSelect }: PanelProps) {
 
   return (
     <>
-      <PanelHeader eyebrow="Kampagne" title={campaign.name} onClose={() => onSelect(null)} />
+      <PanelHeader eyebrow="Campaign" title={campaign.name} onClose={() => onSelect(null)} />
       <div className="space-y-6 p-4">
         <section className="space-y-2 text-sm">
           <div className="flex items-center gap-3">
@@ -159,15 +159,15 @@ function CampaignPanel({ campaign, canEdit, onSelect }: PanelProps) {
           <ProgressBar progress={rollup.campaign.progress} />
           {campaign.objective && <p className="pt-1">{campaign.objective}</p>}
           <Link
-            href={`/kampagnen/${campaign.slug}/charter`}
+            href={`/campaigns/${campaign.slug}/charter`}
             className={cn(buttonVariants({ variant: "outline", size: "sm" }), "mt-2")}
           >
-            Launch Charter öffnen
+            Open launch charter
           </Link>
         </section>
 
         <section>
-          <SectionTitle>Funnel-Stufen</SectionTitle>
+          <SectionTitle>Funnel stages</SectionTitle>
           <ul className="space-y-1">
             {(Object.keys(rollup.stages) as FunnelStage[]).map((stage) => (
               <li key={stage}>
@@ -185,9 +185,9 @@ function CampaignPanel({ campaign, canEdit, onSelect }: PanelProps) {
         </section>
 
         <section>
-          <SectionTitle>Überfällige Assets ({overdue.length})</SectionTitle>
+          <SectionTitle>Overdue assets ({overdue.length})</SectionTitle>
           {overdue.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Keine – alles im Zeitplan.</p>
+            <p className="text-sm text-muted-foreground">None – everything is on schedule.</p>
           ) : (
             <ul className="space-y-1">
               {overdue.map(({ asset, channel }) => (
@@ -224,7 +224,7 @@ function StagePanel({ campaign, canEdit, onSelect, stage }: PanelProps & { stage
   return (
     <>
       <PanelHeader
-        eyebrow="Funnel-Stufe"
+        eyebrow="Funnel stage"
         title={FUNNEL_STAGE_LABELS[stage]}
         onClose={() => onSelect(null)}
         accent={cn("border-t-4", STAGE_STYLES[stage].border)}
@@ -239,15 +239,15 @@ function StagePanel({ campaign, canEdit, onSelect, stage }: PanelProps & { stage
             action={
               canEdit && (
                 <Button size="sm" variant="outline" onClick={() => onSelect({ kind: "new-channel", stage })}>
-                  <Plus /> Kanal
+                  <Plus /> Channel
                 </Button>
               )
             }
           >
-            Kanäle ({channels.length})
+            Channels ({channels.length})
           </SectionTitle>
           {channels.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Noch keine Kanäle in dieser Stufe.</p>
+            <p className="text-sm text-muted-foreground">No channels in this stage yet.</p>
           ) : (
             <ul className="space-y-1">
               {channels.map((c) => {
@@ -283,15 +283,15 @@ function ChannelPanel({ campaign, options, canEdit, onSelect, channelId }: Panel
   const kpis = Object.entries(parseKpiTargets(channel.kpiTargets));
 
   const remove = () => {
-    const extra = channel.assets.length > 0 ? ` und ${channel.assets.length} Asset(s)` : "";
-    if (!window.confirm(`Kanal „${channel.name}“${extra} löschen?`)) return;
+    const extra = channel.assets.length > 0 ? ` and ${channel.assets.length} asset(s)` : "";
+    if (!window.confirm(`Delete channel “${channel.name}”${extra}?`)) return;
     startDelete(async () => {
       const result = await deleteChannel(channel.id);
       if (result.ok) {
         onSelect({ kind: "stage", stage });
         router.refresh();
       } else {
-        window.alert(result.formError ?? "Löschen fehlgeschlagen.");
+        window.alert(result.formError ?? "Deleting failed.");
       }
     });
   };
@@ -327,7 +327,7 @@ function ChannelPanel({ campaign, options, canEdit, onSelect, channelId }: Panel
             Assets ({channel.assets.length})
           </SectionTitle>
           {channel.assets.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Noch keine Assets.</p>
+            <p className="text-sm text-muted-foreground">No assets yet.</p>
           ) : (
             <ul className="space-y-0.5">
               {channel.assets.map((a) => (
@@ -343,7 +343,7 @@ function ChannelPanel({ campaign, options, canEdit, onSelect, channelId }: Panel
 
         {canEdit ? (
           <section>
-            <SectionTitle>Kanal bearbeiten</SectionTitle>
+            <SectionTitle>Edit channel</SectionTitle>
             <ChannelForm
               key={`${channel.id}-${channel.updatedAt.getTime()}`}
               mode="edit"
@@ -357,9 +357,9 @@ function ChannelPanel({ campaign, options, canEdit, onSelect, channelId }: Panel
         ) : (
           <section className="space-y-1 text-sm">
             <SectionTitle>Details</SectionTitle>
-            <p>Owner: {channel.owner?.name ?? "offen"}</p>
-            {(channel.startDate || channel.endDate) && <p>Zeitraum: {formatDateRange(channel.startDate, channel.endDate)}</p>}
-            {kpis.length > 0 && <p>KPI-Ziele: {kpis.map(([k, v]) => `${k} ${formatGermanNumber(v)}`).join(" · ")}</p>}
+            <p>Owner: {channel.owner?.name ?? "unassigned"}</p>
+            {(channel.startDate || channel.endDate) && <p>Period: {formatDateRange(channel.startDate, channel.endDate)}</p>}
+            {kpis.length > 0 && <p>KPI targets: {kpis.map(([k, v]) => `${k} ${formatNumber(v)}`).join(" · ")}</p>}
             {channel.notes && <p className="whitespace-pre-line">{channel.notes}</p>}
           </section>
         )}
@@ -369,7 +369,7 @@ function ChannelPanel({ campaign, options, canEdit, onSelect, channelId }: Panel
   );
 }
 
-const WORKFLOW: AssetStatus[] = ["IDEE", "BRIEFING", "IN_PRODUKTION", "FREIGABE", "FERTIG", "LIVE"];
+const WORKFLOW: AssetStatus[] = ["IDEA", "BRIEFING", "IN_PRODUCTION", "APPROVAL", "DONE", "LIVE"];
 
 function AssetPanel({ campaign, options, canEdit, onSelect, assetId }: PanelProps & { assetId: string }) {
   const router = useRouter();
@@ -390,19 +390,19 @@ function AssetPanel({ campaign, options, canEdit, onSelect, assetId }: PanelProp
     startTransition(async () => {
       const result = await setAssetStatus(asset.id, next);
       if (result.ok) router.refresh();
-      else setError(result.formError ?? "Status konnte nicht geändert werden.");
+      else setError(result.formError ?? "The status could not be changed.");
     });
   };
 
   const remove = () => {
-    if (!window.confirm(`Asset „${asset.title}“ löschen?`)) return;
+    if (!window.confirm(`Delete asset “${asset.title}”?`)) return;
     startTransition(async () => {
       const result = await deleteAsset(asset.id);
       if (result.ok) {
         onSelect({ kind: "channel", id: channel.id });
         router.refresh();
       } else {
-        setError(result.formError ?? "Löschen fehlgeschlagen.");
+        setError(result.formError ?? "Deleting failed.");
       }
     });
   };
@@ -426,7 +426,7 @@ function AssetPanel({ campaign, options, canEdit, onSelect, assetId }: PanelProp
             <span className="text-muted-foreground">{ASSET_TYPE_LABELS[asset.assetType as AssetType] ?? asset.assetType}</span>
             {asset.dueDate && (
               <span className={cn("ml-auto tabular-nums", overdue ? "font-semibold text-status-red" : "text-muted-foreground")}>
-                {overdue ? "Überfällig seit " : "Fällig "}
+                {overdue ? "Overdue since " : "Due "}
                 {formatDate(asset.dueDate)}
               </span>
             )}
@@ -434,8 +434,8 @@ function AssetPanel({ campaign, options, canEdit, onSelect, assetId }: PanelProp
           {!canEdit && (
             <div className="space-y-1 pt-2">
               {asset.format && <p>Format: {asset.format}</p>}
-              <p>Owner: {userName(asset.ownerId) ?? "offen"}</p>
-              <p>Freigabe: {userName(asset.approverId) ?? "offen"}</p>
+              <p>Owner: {userName(asset.ownerId) ?? "unassigned"}</p>
+              <p>Approver: {userName(asset.approverId) ?? "unassigned"}</p>
               {asset.notes && <p className="whitespace-pre-line">{asset.notes}</p>}
             </div>
           )}
@@ -444,7 +444,7 @@ function AssetPanel({ campaign, options, canEdit, onSelect, assetId }: PanelProp
         {canEdit && (
           <section>
             <SectionTitle>Status</SectionTitle>
-            <div className={cn("grid grid-cols-3 gap-1.5", pending && "opacity-60")} role="group" aria-label="Status setzen">
+            <div className={cn("grid grid-cols-3 gap-1.5", pending && "opacity-60")} role="group" aria-label="Set status">
               {WORKFLOW.map((s) => (
                 <Button
                   key={s}
@@ -484,7 +484,7 @@ function AssetPanel({ campaign, options, canEdit, onSelect, assetId }: PanelProp
 
         {canEdit && (
           <section>
-            <SectionTitle>Asset bearbeiten</SectionTitle>
+            <SectionTitle>Edit asset</SectionTitle>
             <AssetForm
               key={`${asset.id}-${asset.updatedAt.getTime()}`}
               mode="edit"
@@ -508,8 +508,8 @@ function NewChannelPanel({ campaign, options, onSelect, stage }: PanelProps & { 
   return (
     <>
       <PanelHeader
-        eyebrow={`${FUNNEL_STAGE_LABELS[stage]} · Neuer Kanal`}
-        title="Kanal hinzufügen"
+        eyebrow={`${FUNNEL_STAGE_LABELS[stage]} · New channel`}
+        title="Add channel"
         onClose={() => onSelect(null)}
         accent={cn("border-t-4", STAGE_STYLES[stage].border)}
       />
@@ -544,7 +544,7 @@ function NewAssetPanel({ campaign, options, onSelect, channelId }: PanelProps & 
     <>
       <PanelHeader
         eyebrow={`${FUNNEL_STAGE_LABELS[stage]} · ${channel.name}`}
-        title="Asset hinzufügen"
+        title="Add asset"
         onClose={() => onSelect(null)}
         accent={cn("border-t-4", STAGE_STYLES[stage].border)}
       />
@@ -571,8 +571,8 @@ function NewAssetPanel({ campaign, options, onSelect, channelId }: PanelProps & 
 function Missing({ onClose }: { onClose: () => void }) {
   return (
     <>
-      <PanelHeader eyebrow="Details" title="Nicht gefunden" onClose={onClose} />
-      <p className="p-4 text-sm text-muted-foreground">Dieses Element existiert nicht mehr.</p>
+      <PanelHeader eyebrow="Details" title="Not found" onClose={onClose} />
+      <p className="p-4 text-sm text-muted-foreground">This item no longer exists.</p>
     </>
   );
 }

@@ -21,19 +21,19 @@ const asset = (status: string, due: string | null): StatusAsset => ({
 });
 
 describe("computeProgress", () => {
-  it("counts FERTIG and LIVE as done", () => {
+  it("counts DONE and LIVE as done", () => {
     const p = computeProgress([
-      asset("FERTIG", null),
+      asset("DONE", null),
       asset("LIVE", null),
-      asset("FREIGABE", null),
-      asset("IDEE", null),
-      asset("PAUSIERT", null),
+      asset("APPROVAL", null),
+      asset("IDEA", null),
+      asset("PAUSED", null),
     ]);
     expect(p).toEqual({ done: 2, total: 5, ratio: 0.4 });
   });
 
   it("excludes cancelled assets", () => {
-    expect(computeProgress([asset("FERTIG", null), asset("ABGEBROCHEN", null)])).toMatchObject({
+    expect(computeProgress([asset("DONE", null), asset("CANCELLED", null)])).toMatchObject({
       done: 1,
       total: 1,
     });
@@ -46,22 +46,22 @@ describe("computeProgress", () => {
 
 describe("isOverdue", () => {
   it("is overdue when due yesterday and not done", () => {
-    expect(isOverdue(asset("IN_PRODUKTION", "2026-10-27"), NOW, config)).toBe(true);
+    expect(isOverdue(asset("IN_PRODUCTION", "2026-10-27"), NOW, config)).toBe(true);
   });
 
   it("is not overdue when due today", () => {
-    expect(isOverdue(asset("IN_PRODUKTION", "2026-10-28"), NOW, config)).toBe(false);
+    expect(isOverdue(asset("IN_PRODUCTION", "2026-10-28"), NOW, config)).toBe(false);
   });
 
   it("ignores done, cancelled and undated assets", () => {
-    expect(isOverdue(asset("FERTIG", "2026-10-01"), NOW, config)).toBe(false);
+    expect(isOverdue(asset("DONE", "2026-10-01"), NOW, config)).toBe(false);
     expect(isOverdue(asset("LIVE", "2026-10-01"), NOW, config)).toBe(false);
-    expect(isOverdue(asset("ABGEBROCHEN", "2026-10-01"), NOW, config)).toBe(false);
-    expect(isOverdue(asset("IDEE", null), NOW, config)).toBe(false);
+    expect(isOverdue(asset("CANCELLED", "2026-10-01"), NOW, config)).toBe(false);
+    expect(isOverdue(asset("IDEA", null), NOW, config)).toBe(false);
   });
 
   it("treats paused assets past their deadline as overdue", () => {
-    expect(isOverdue(asset("PAUSIERT", "2026-10-20"), NOW, config)).toBe(true);
+    expect(isOverdue(asset("PAUSED", "2026-10-20"), NOW, config)).toBe(true);
   });
 
   it("uses the calendar day in the configured time zone", () => {
@@ -82,14 +82,14 @@ describe("isDueSoonAndBehind", () => {
   });
 
   it("is false once the asset is in approval or later", () => {
-    expect(isDueSoonAndBehind(asset("FREIGABE", "2026-10-30"), NOW, config)).toBe(false);
-    expect(isDueSoonAndBehind(asset("FERTIG", "2026-10-30"), NOW, config)).toBe(false);
+    expect(isDueSoonAndBehind(asset("APPROVAL", "2026-10-30"), NOW, config)).toBe(false);
+    expect(isDueSoonAndBehind(asset("DONE", "2026-10-30"), NOW, config)).toBe(false);
   });
 
   it("respects a custom threshold", () => {
     const strict = { ...config, dueSoonDays: 2 };
-    expect(isDueSoonAndBehind(asset("IDEE", "2026-11-01"), NOW, strict)).toBe(false);
-    expect(isDueSoonAndBehind(asset("IDEE", "2026-10-30"), NOW, strict)).toBe(true);
+    expect(isDueSoonAndBehind(asset("IDEA", "2026-11-01"), NOW, strict)).toBe(false);
+    expect(isDueSoonAndBehind(asset("IDEA", "2026-10-30"), NOW, strict)).toBe(true);
   });
 });
 
@@ -101,7 +101,7 @@ describe("computeTrafficLight", () => {
   it("is RED as soon as one asset is overdue", () => {
     expect(
       computeTrafficLight(
-        [asset("FERTIG", "2026-10-01"), asset("BRIEFING", "2026-10-29"), asset("IDEE", "2026-10-20")],
+        [asset("DONE", "2026-10-01"), asset("BRIEFING", "2026-10-29"), asset("IDEA", "2026-10-20")],
         NOW,
         config,
       ),
@@ -110,14 +110,14 @@ describe("computeTrafficLight", () => {
 
   it("is YELLOW when something is due soon and behind", () => {
     expect(
-      computeTrafficLight([asset("FREIGABE", "2026-10-29"), asset("BRIEFING", "2026-11-02")], NOW, config),
+      computeTrafficLight([asset("APPROVAL", "2026-10-29"), asset("BRIEFING", "2026-11-02")], NOW, config),
     ).toBe("YELLOW");
   });
 
   it("is GREEN when everything is on track", () => {
     expect(
       computeTrafficLight(
-        [asset("FREIGABE", "2026-10-29"), asset("IDEE", "2026-12-01"), asset("ABGEBROCHEN", "2026-10-01")],
+        [asset("APPROVAL", "2026-10-29"), asset("IDEA", "2026-12-01"), asset("CANCELLED", "2026-10-01")],
         NOW,
         config,
       ),
@@ -128,20 +128,20 @@ describe("computeTrafficLight", () => {
 describe("computeCampaignPhase", () => {
   const base = { startDate: day("2026-11-15"), endDate: day("2026-12-31") };
 
-  it("is PLANUNG before start with only ideas", () => {
-    expect(computeCampaignPhase({ ...base, assets: [asset("IDEE", null)] }, NOW, config)).toBe("PLANUNG");
-    expect(computeCampaignPhase({ ...base, assets: [] }, NOW, config)).toBe("PLANUNG");
+  it("is PLANNING before start with only ideas", () => {
+    expect(computeCampaignPhase({ ...base, assets: [asset("IDEA", null)] }, NOW, config)).toBe("PLANNING");
+    expect(computeCampaignPhase({ ...base, assets: [] }, NOW, config)).toBe("PLANNING");
   });
 
-  it("is IN_ARBEIT before start once work has begun", () => {
+  it("is IN_PROGRESS before start once work has begun", () => {
     expect(
-      computeCampaignPhase({ ...base, assets: [asset("IDEE", null), asset("BRIEFING", null)] }, NOW, config),
-    ).toBe("IN_ARBEIT");
+      computeCampaignPhase({ ...base, assets: [asset("IDEA", null), asset("BRIEFING", null)] }, NOW, config),
+    ).toBe("IN_PROGRESS");
   });
 
-  it("ignores cancelled assets for IN_ARBEIT", () => {
-    expect(computeCampaignPhase({ ...base, assets: [asset("ABGEBROCHEN", null)] }, NOW, config)).toBe(
-      "PLANUNG",
+  it("ignores cancelled assets for IN_PROGRESS", () => {
+    expect(computeCampaignPhase({ ...base, assets: [asset("CANCELLED", null)] }, NOW, config)).toBe(
+      "PLANNING",
     );
   });
 
@@ -154,9 +154,9 @@ describe("computeCampaignPhase", () => {
     expect(computeCampaignPhase(running, NOW, config)).toBe("LIVE");
   });
 
-  it("is ABGESCHLOSSEN after the end date", () => {
+  it("is COMPLETED after the end date", () => {
     const past = { startDate: day("2026-09-01"), endDate: day("2026-10-27"), assets: [asset("LIVE", null)] };
-    expect(computeCampaignPhase(past, NOW, config)).toBe("ABGESCHLOSSEN");
+    expect(computeCampaignPhase(past, NOW, config)).toBe("COMPLETED");
   });
 });
 
@@ -167,7 +167,7 @@ describe("rollupCampaign", () => {
         startDate: day("2026-11-01"),
         endDate: day("2026-12-31"),
         channels: [
-          { funnelStage: "AWARENESS", assets: [asset("FERTIG", null), asset("IDEE", "2026-10-20")] },
+          { funnelStage: "AWARENESS", assets: [asset("DONE", null), asset("IDEA", "2026-10-20")] },
           { funnelStage: "AWARENESS", assets: [asset("LIVE", null)] },
           { funnelStage: "SALES", assets: [asset("BRIEFING", "2026-10-30")] },
         ],

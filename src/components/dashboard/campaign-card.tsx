@@ -14,7 +14,7 @@ export function CampaignCard({ summary }: { summary: CampaignSummary }) {
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <h3 className="font-semibold leading-tight">
-            <Link href={`/kampagnen/${campaign.slug}`} className="outline-none after:absolute after:inset-0">
+            <Link href={`/campaigns/${campaign.slug}`} className="outline-none after:absolute after:inset-0">
               {campaign.name}
             </Link>
           </h3>
@@ -33,11 +33,11 @@ export function CampaignCard({ summary }: { summary: CampaignSummary }) {
       </div>
 
       <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
-        <dt className="text-muted-foreground">Zeitraum</dt>
+        <dt className="text-muted-foreground">Period</dt>
         <dd>{formatDateRange(campaign.startDate, campaign.endDate)}</dd>
         <dt className="text-muted-foreground">Owner</dt>
         <dd>{campaign.owner.name}</dd>
-        <dt className="text-muted-foreground">Umsetzung</dt>
+        <dt className="text-muted-foreground">Execution</dt>
         <dd>{EXECUTION_TYPE_LABELS[campaign.executionType as ExecutionType] ?? campaign.executionType}</dd>
         <dt className="text-muted-foreground">Budget</dt>
         <dd>{formatEuroCents(campaign.budgetCents)}</dd>
@@ -63,11 +63,11 @@ export function CampaignCard({ summary }: { summary: CampaignSummary }) {
 
       <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 border-t pt-3 text-sm">
         {rollup.campaign.overdueCount > 0 && (
-          <span className="font-medium text-status-red">{rollup.campaign.overdueCount} überfällig</span>
+          <span className="font-medium text-status-red">{rollup.campaign.overdueCount} overdue</span>
         )}
-        {dueSoonCount > 0 && <span className="font-medium text-status-yellow">{dueSoonCount} bald fällig</span>}
+        {dueSoonCount > 0 && <span className="font-medium text-status-yellow">{dueSoonCount} due soon</span>}
         {rollup.campaign.overdueCount === 0 && dueSoonCount === 0 && (
-          <span className="text-muted-foreground">Keine offenen Termine</span>
+          <span className="text-muted-foreground">No open deadlines</span>
         )}
         <span className="ml-auto">
           <CompareToggle slug={campaign.slug} name={campaign.name} />

@@ -39,7 +39,7 @@ const LIGHT_DOT: Record<TrafficLight, string> = {
   YELLOW: "bg-status-yellow",
   GREEN: "bg-status-green",
 };
-const LIGHT_LABEL: Record<TrafficLight, string> = { RED: "Kritisch", YELLOW: "Achtung", GREEN: "Im Plan" };
+const LIGHT_LABEL: Record<TrafficLight, string> = { RED: "Critical", YELLOW: "At risk", GREEN: "On track" };
 
 function LightDot({ light }: { light: TrafficLight }) {
   return <span className={cn("inline-block size-2.5 shrink-0 rounded-full", LIGHT_DOT[light])} title={LIGHT_LABEL[light]} />;
@@ -115,7 +115,7 @@ function NodeControls({
   return (
     <div className="absolute -right-3 top-1/2 flex -translate-y-1/2 flex-col gap-1">
       {childCount > 0 && (
-        <NodeButton label={collapsed ? "Ausklappen" : "Einklappen"} onClick={() => onToggle(id)}>
+        <NodeButton label={collapsed ? "Expand" : "Collapse"} onClick={() => onToggle(id)}>
           {collapsed ? (
             <>
               {childCount}
@@ -170,10 +170,10 @@ export function StageNode({ id, data, selected }: NodeProps<Node<StageNodeData>>
         <LightDot light={data.trafficLight} />
       </div>
       <p className="text-[11px] text-muted-foreground">
-        {data.childCount === 1 ? "1 Kanal" : `${data.childCount} Kanäle`}
+        {data.childCount === 1 ? "1 channel" : `${data.childCount} channels`}
       </p>
       <MiniProgress progress={data.progress} className="mt-1 pr-2" />
-      <NodeControls id={id} collapsed={data.collapsed} childCount={data.childCount} addLabel="Kanal hinzufügen" />
+      <NodeControls id={id} collapsed={data.collapsed} childCount={data.childCount} addLabel="Add channel" />
     </div>
   );
 }
@@ -190,7 +190,7 @@ export function ChannelNode({ id, data, selected }: NodeProps<Node<ChannelNodeDa
       </div>
       <p className="truncate pr-2 text-[11px] text-muted-foreground">
         {data.typeName !== data.name ? `${data.typeName} · ` : ""}
-        {data.ownerName ?? "Owner offen"}
+        {data.ownerName ?? "No owner"}
         {data.kpiCount > 0 && ` · ${data.kpiCount} KPI`}
         {data.linkCount > 0 && (
           <span title={`${data.linkCount} Link(s)`}>
@@ -200,13 +200,13 @@ export function ChannelNode({ id, data, selected }: NodeProps<Node<ChannelNodeDa
         )}
       </p>
       <MiniProgress progress={data.progress} className="mt-1 pr-2" />
-      <NodeControls id={id} collapsed={data.collapsed} childCount={data.childCount} addLabel="Asset hinzufügen" />
+      <NodeControls id={id} collapsed={data.collapsed} childCount={data.childCount} addLabel="Add asset" />
     </div>
   );
 }
 
 export function AssetNode({ data, selected }: NodeProps<Node<AssetNodeData>>) {
-  const statusStyle = ASSET_STATUS_STYLES[data.status] ?? ASSET_STATUS_STYLES.IDEE;
+  const statusStyle = ASSET_STATUS_STYLES[data.status] ?? ASSET_STATUS_STYLES.IDEA;
   return (
     <div
       className={cn(
@@ -220,7 +220,7 @@ export function AssetNode({ data, selected }: NodeProps<Node<AssetNodeData>>) {
       <Handles source={false} />
       <div className="flex items-center gap-2">
         <span
-          className={cn("min-w-0 flex-1 truncate text-sm", data.status === "ABGEBROCHEN" && "line-through")}
+          className={cn("min-w-0 flex-1 truncate text-sm", data.status === "CANCELLED" && "line-through")}
           title={data.title}
         >
           {data.title}
@@ -241,9 +241,9 @@ export function AssetNode({ data, selected }: NodeProps<Node<AssetNodeData>>) {
               data.overdue && "font-semibold text-status-red",
               data.dueSoon && "font-medium text-status-yellow",
             )}
-            title={data.overdue ? "Überfällig" : data.dueSoon ? "Bald fällig" : "Fällig"}
+            title={data.overdue ? "Overdue" : data.dueSoon ? "Due soon" : "Due"}
           >
-            {data.overdue ? "überfällig · " : ""}
+            {data.overdue ? "overdue · " : ""}
             {formatDate(data.dueDate)}
           </span>
         )}

@@ -11,11 +11,11 @@ const CONTENT_TYPES: Record<string, string> = {
 /** Downloads the original file of an imported KPI report. */
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser();
-  if (!user || !can(user.role, "read")) return new Response("Nicht angemeldet.", { status: 401 });
+  if (!user || !can(user.role, "read")) return new Response("Not signed in.", { status: 401 });
 
   const { id } = await params;
   const report = await db.kpiReport.findUnique({ where: { id } });
-  if (!report) return new Response("Report nicht gefunden.", { status: 404 });
+  if (!report) return new Response("Report not found.", { status: 404 });
 
   try {
     const data = await storage.get(report.storageKey);
@@ -27,6 +27,6 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       },
     });
   } catch {
-    return new Response("Datei nicht mehr vorhanden.", { status: 410 });
+    return new Response("File no longer available.", { status: 410 });
   }
 }

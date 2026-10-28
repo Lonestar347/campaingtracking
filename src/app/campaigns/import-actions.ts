@@ -65,10 +65,10 @@ export async function analyzeUpload(campaignId: string, formData: FormData): Pro
   const auth = await requirePermission("write");
   if (!auth.user) return { ok: false, error: auth.error };
   const campaign = await campaignContext(campaignId);
-  if (!campaign) return { ok: false, error: "Kampagne nicht gefunden." };
+  if (!campaign) return { ok: false, error: "Campaign not found." };
 
   const file = formData.get("file");
-  if (!(file instanceof File)) return { ok: false, error: "Bitte eine Datei auswählen." };
+  if (!(file instanceof File)) return { ok: false, error: "Please select a file." };
 
   try {
     checkUpload(file.name, file.size);
@@ -102,7 +102,7 @@ export async function analyzeUpload(campaignId: string, formData: FormData): Pro
   } catch (error) {
     if (error instanceof UploadError) return { ok: false, error: error.message };
     console.error("analyzeUpload failed", error);
-    return { ok: false, error: "Die Datei konnte nicht verarbeitet werden." };
+    return { ok: false, error: "The file could not be processed." };
   }
 }
 
@@ -141,29 +141,29 @@ export async function runImport(input: RunImportInput): Promise<RunImportResult>
   const auth = await requirePermission("write");
   if (!auth.user) return { ok: false, errors: [{ message: auth.error }] };
   const campaign = await campaignContext(input.campaignId);
-  if (!campaign) return { ok: false, errors: [{ message: "Kampagne nicht gefunden." }] };
+  if (!campaign) return { ok: false, errors: [{ message: "Campaign not found." }] };
 
   // Only files uploaded for this campaign may be imported.
   const prefix = `reports/${campaign.id}/`;
   if (!input.uploadKey.startsWith(prefix) || input.uploadKey.includes("..")) {
-    return { ok: false, errors: [{ message: "Ungültige Datei-Referenz. Bitte die Datei erneut hochladen." }] };
+    return { ok: false, errors: [{ message: "Invalid file reference. Please upload the file again." }] };
   }
 
   const fieldErrors: Record<string, string> = {};
   const source = input.source.trim();
-  if (!source) fieldErrors.source = "Quelle angeben, z. B. den Namen der Agentur";
-  if (source.length > 120) fieldErrors.source = "Maximal 120 Zeichen";
+  if (!source) fieldErrors.source = "Enter the source, e.g. the agency name";
+  if (source.length > 120) fieldErrors.source = "Maximum 120 characters";
   const periodStart = parseDateInput(input.periodStart);
   const periodEnd = parseDateInput(input.periodEnd);
-  if (!periodStart) fieldErrors.periodStart = "Beginn des Berichtszeitraums angeben";
-  if (!periodEnd) fieldErrors.periodEnd = "Ende des Berichtszeitraums angeben";
-  if (periodStart && periodEnd && periodEnd < periodStart) fieldErrors.periodEnd = "Ende liegt vor dem Beginn";
+  if (!periodStart) fieldErrors.periodStart = "Enter the start of the reporting period";
+  if (!periodEnd) fieldErrors.periodEnd = "Enter the end of the reporting period";
+  if (periodStart && periodEnd && periodEnd < periodStart) fieldErrors.periodEnd = "End is before start";
   const defaultChannelId = input.defaultChannelId || null;
   if (defaultChannelId && !campaign.channels.some((c) => c.id === defaultChannelId)) {
-    fieldErrors.defaultChannelId = "Kanal gehört nicht zur Kampagne";
+    fieldErrors.defaultChannelId = "Channel does not belong to this campaign";
   }
   const mapping = importMappingSchema.safeParse(input.mapping);
-  if (!mapping.success) return { ok: false, errors: [{ message: "Die Zuordnung ist unvollständig." }] };
+  if (!mapping.success) return { ok: false, errors: [{ message: "The mapping is incomplete." }] };
   const hasFieldErrors = Object.keys(fieldErrors).length > 0;
 
   let table: RawTable;
@@ -172,7 +172,7 @@ export async function runImport(input: RunImportInput): Promise<RunImportResult>
     const sheet = sheets.find((s) => s.name === input.sheetName) ?? sheets[0];
     table = extractTable(sheet.rows);
   } catch (error) {
-    const message = error instanceof UploadError ? error.message : "Die hochgeladene Datei ist nicht mehr verfügbar. Bitte erneut hochladen.";
+    const message = error instanceof UploadError ? error.message : "The uploaded file is no longer available. Please upload it again.";
     return { ok: false, errors: [{ message }] };
   }
 
@@ -182,26 +182,26 @@ export async function runImport(input: RunImportInput): Promise<RunImportResult>
   if (hasFieldErrors || result.errors.length > 0) {
     return {
       ok: false,
-      errors: [...(hasFieldErrors ? [{ message: "Bitte die markierten Angaben prüfen." }] : []), ...result.errors],
+      errors: [...(hasFieldErrors ? [{ message: "Please check the highlighted fields." }] : []), ...result.errors],
       warnings: result.warnings,
       unknownChannels: result.unknownChannels,
       fieldErrors,
     };
   }
   if (result.values.length === 0) {
-    return { ok: false, errors: [{ message: "Keine Werte gefunden – sind die richtigen Spalten zugeordnet?" }] };
+    return { ok: false, errors: [{ message: "No values found – are the right columns mapped?" }] };
   }
 
   const warnings = [...result.warnings];
   const outside = result.values.filter((v) => v.date && (v.date < periodStart! || v.date > periodEnd!)).length;
-  if (outside > 0) warnings.push({ message: `${outside} Wert(e) liegen außerhalb des angegebenen Berichtszeitraums.` });
+  if (outside > 0) warnings.push({ message: `${outside} value(s) fall outside the reporting period.` });
   const duplicate = await db.kpiReport.findFirst({
     where: { campaignId: campaign.id, source, periodStart: periodStart!, periodEnd: periodEnd! },
     select: { originalFileName: true },
   });
   if (duplicate) {
     warnings.push({
-      message: `Für „${source}“ und diesen Zeitraum gibt es schon einen Report (${duplicate.originalFileName}). Werte würden doppelt gezählt.`,
+      message: `A report for “${source}” and this period already exists (${duplicate.originalFileName}). Values would be counted twice.`,
     });
   }
 
@@ -254,7 +254,7 @@ export async function runImport(input: RunImportInput): Promise<RunImportResult>
     return report.id;
   });
 
-  revalidatePath(`/kampagnen/${campaign.slug}`, "layout");
+  revalidatePath(`/campaigns/${campaign.slug}`, "layout");
   return { ok: true, dryRun: false, valueCount: result.values.length, summary, warnings, reportId };
 }
 
@@ -262,7 +262,7 @@ export async function deleteReport(reportId: string): Promise<{ ok: boolean; err
   const auth = await requirePermission("write");
   if (!auth.user) return { ok: false, error: auth.error };
   const report = await db.kpiReport.findUnique({ where: { id: reportId }, include: { campaign: { select: { slug: true } } } });
-  if (!report) return { ok: false, error: "Report nicht gefunden." };
+  if (!report) return { ok: false, error: "Report not found." };
 
   await db.$transaction(async (tx) => {
     await tx.kpiReport.delete({ where: { id: reportId } });
@@ -278,6 +278,6 @@ export async function deleteReport(reportId: string): Promise<{ ok: boolean; err
   });
   await storage.delete(report.storageKey).catch(() => undefined);
 
-  revalidatePath(`/kampagnen/${report.campaign.slug}`, "layout");
+  revalidatePath(`/campaigns/${report.campaign.slug}`, "layout");
   return { ok: true };
 }

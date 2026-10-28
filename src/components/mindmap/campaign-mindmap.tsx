@@ -38,7 +38,7 @@ interface Props {
   initialSelection?: Selection | null;
 }
 
-const collapsedKey = (campaignId: string) => `kampagnen-tracker:mindmap-collapsed:${campaignId}`;
+const collapsedKey = (campaignId: string) => `campaign-tracker:mindmap-collapsed:${campaignId}`;
 
 function readCollapsed(campaignId: string): Set<string> {
   try {
@@ -257,10 +257,10 @@ function MindmapCanvas({ campaign, options, canEdit, initialSelection = null }: 
             <Controls showInteractive={false} position="bottom-right" />
             <Panel position="top-left" className="flex flex-wrap gap-1.5">
               <Button size="sm" variant="outline" className="bg-card" onClick={expandAll}>
-                <ChevronsUpDown /> Alles ausklappen
+                <ChevronsUpDown /> Expand all
               </Button>
               <Button size="sm" variant="outline" className="bg-card" onClick={collapseAssets}>
-                <ChevronsDownUp /> Assets einklappen
+                <ChevronsDownUp /> Collapse assets
               </Button>
               <Button
                 size="sm"
@@ -268,7 +268,7 @@ function MindmapCanvas({ campaign, options, canEdit, initialSelection = null }: 
                 className="bg-card"
                 onClick={() => fitView({ padding: 0.15, duration: 300, maxZoom: 1 })}
               >
-                <Maximize /> Einpassen
+                <Maximize /> Fit view
               </Button>
             </Panel>
             <Panel position="bottom-left">
@@ -301,15 +301,15 @@ function Legend() {
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
       >
-        Legende
+        Legend
       </button>
       {open && (
         <div className="space-y-2 border-t px-2.5 py-2">
           <div className="space-y-1">
             {[
-              ["bg-status-red", "Kritisch: Asset überfällig"],
-              ["bg-status-yellow", "Achtung: bald fällig, noch nicht in Freigabe"],
-              ["bg-status-green", "Im Plan"],
+              ["bg-status-red", "Critical: asset overdue"],
+              ["bg-status-yellow", "At risk: due soon, not yet in approval"],
+              ["bg-status-green", "On track"],
             ].map(([color, label]) => (
               <p key={label} className="flex items-center gap-2">
                 <span className={cn("size-2.5 rounded-full", color)} /> {label}
@@ -324,7 +324,7 @@ function Legend() {
               </p>
             ))}
           </div>
-          <p className="border-t pt-2 text-muted-foreground">x/y = fertige bzw. live Assets</p>
+          <p className="border-t pt-2 text-muted-foreground">x/y = assets done or live</p>
         </div>
       )}
     </div>

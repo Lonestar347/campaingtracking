@@ -6,15 +6,15 @@ import { cn } from "@/lib/utils";
 
 export function CampaignTabs({ slug }: { slug: string }) {
   const pathname = usePathname();
-  const base = `/kampagnen/${slug}`;
+  const base = `/campaigns/${slug}`;
   const tabs = [
-    { href: base, label: "Mindmap", active: pathname === base },
+    { href: base, label: "Mind map", active: pathname === base },
     { href: `${base}/funnel`, label: "Funnel", active: pathname === `${base}/funnel` },
-    { href: `${base}/charter`, label: "Launch Charter", active: pathname.startsWith(`${base}/charter`) },
+    { href: `${base}/charter`, label: "Launch charter", active: pathname.startsWith(`${base}/charter`) },
     { href: `${base}/performance`, label: "Performance", active: pathname === `${base}/performance` },
   ];
   return (
-    <nav className="flex gap-1 border-b print:hidden" aria-label="Kampagnenansichten">
+    <nav className="flex gap-1 border-b print:hidden" aria-label="Campaign views">
       {tabs.map((tab) => (
         <Link
           key={tab.href}

@@ -40,11 +40,11 @@ function Section({
         <h3 className="font-semibold">{title}</h3>
         {hasErrors && (
           <span className="inline-flex items-center gap-1 text-xs font-medium text-status-red">
-            <AlertCircle className="size-3.5" /> Bitte prüfen
+            <AlertCircle className="size-3.5" /> Please check
           </span>
         )}
         <Button variant="ghost" size="sm" className="ml-auto" onClick={() => onEdit(step)}>
-          <Pencil /> Bearbeiten
+          <Pencil /> Edit
         </Button>
       </div>
       {children}
@@ -84,10 +84,10 @@ export function ReviewStep({
 
   return (
     <div>
-      <StepIntro title={mode === "create" ? "Prüfen & anlegen" : "Prüfen & speichern"}>
+      <StepIntro title={mode === "create" ? "Review & create" : "Review & save"}>
         {mode === "create"
-          ? `Beim Anlegen werden die Kampagne, ${values.channels.length} Kanäle und ${assetCount} Assets erzeugt.`
-          : "Beim Speichern entsteht eine neue Version der Charter."}
+          ? `Creating will set up the campaign, ${values.channels.length} channels and ${assetCount} assets.`
+          : "Saving creates a new version of the charter."}
       </StepIntro>
 
       {generalErrors.length > 0 && (
@@ -95,26 +95,26 @@ export function ReviewStep({
       )}
 
       <div className="space-y-4">
-        <Section title="Basis" {...sectionProps("basis")}>
+        <Section title="Basics" {...sectionProps("basis")}>
           <Rows
             rows={[
               ["Name", showText(basis.name)],
-              ["Marke / Produktlinie", [basis.brand, basis.productLine].filter(Boolean).join(" / ") || "–"],
-              ["Märkte", basis.markets.join(", ") || "–"],
-              ["Zeitraum", `${showDate(basis.startDate)} – ${showDate(basis.endDate)}`],
+              ["Brand / product line", [basis.brand, basis.productLine].filter(Boolean).join(" / ") || "–"],
+              ["Markets", basis.markets.join(", ") || "–"],
+              ["Period", `${showDate(basis.startDate)} – ${showDate(basis.endDate)}`],
               ["Owner", userName(basis.ownerId)],
-              ["Umsetzung", EXECUTION_TYPE_LABELS[basis.executionType as ExecutionType] ?? "–"],
-              ["Partner", showText(basis.partners)],
+              ["Execution", EXECUTION_TYPE_LABELS[basis.executionType as ExecutionType] ?? "–"],
+              ["Partners", showText(basis.partners)],
             ]}
           />
         </Section>
 
-        <Section title="Strategie" {...sectionProps("strategy")}>
+        <Section title="Strategy" {...sectionProps("strategy")}>
           <Rows
             rows={[
-              ["Ziel", showText(strategy.objective)],
-              ["Zielgruppe", showText(strategy.targetAudience)],
-              ["Kernbotschaft", showText(strategy.keyMessage)],
+              ["Objective", showText(strategy.objective)],
+              ["Target audience", showText(strategy.targetAudience)],
+              ["Key message", showText(strategy.keyMessage)],
               ["Insight", showText(strategy.insight)],
               ["Reason to Believe", showText(strategy.reasonToBelieve)],
             ]}
@@ -124,18 +124,18 @@ export function ReviewStep({
         <Section title="Budget" {...sectionProps("budget")}>
           <Rows
             rows={[
-              ["Gesamt", budget.total ? `${budget.total} €` : "–"],
+              ["Total", budget.total ? `€${budget.total}` : "–"],
               ...FUNNEL_STAGES.filter((s) => budget.byStage[s]).map(
-                (s) => [FUNNEL_STAGE_LABELS[s], `${budget.byStage[s]} €`] as [string, string],
+                (s) => [FUNNEL_STAGE_LABELS[s], `€${budget.byStage[s]}`] as [string, string],
               ),
             ]}
           />
         </Section>
 
         {steps.includes("channels") && (
-          <Section title={`Kanäle & Assets (${values.channels.length})`} {...sectionProps("channels")}>
+          <Section title={`Channels & assets (${values.channels.length})`} {...sectionProps("channels")}>
             {values.channels.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Keine Kanäle gewählt.</p>
+              <p className="text-sm text-muted-foreground">No channels selected.</p>
             ) : (
               <ul className="space-y-2 text-sm">
                 {values.channels.map((c) => (
@@ -152,8 +152,8 @@ export function ReviewStep({
                       <ul className="mt-1 text-muted-foreground">
                         {c.assets.map((a) => (
                           <li key={a.clientId}>
-                            – {a.title || "Ohne Titel"} ({ASSET_TYPE_LABELS[a.assetType as AssetType] ?? "Typ fehlt"}
-                            {a.dueDate && `, fällig ${showDate(a.dueDate)}`})
+                            – {a.title || "Untitled"} ({ASSET_TYPE_LABELS[a.assetType as AssetType] ?? "type missing"}
+                            {a.dueDate && `, due ${showDate(a.dueDate)}`})
                           </li>
                         ))}
                       </ul>
@@ -164,7 +164,7 @@ export function ReviewStep({
             )}
             {errorSteps.has("assets") && (
               <Button variant="link" size="sm" className="mt-2 px-0 text-status-red" onClick={() => onEdit("assets")}>
-                Assets prüfen
+                Check assets
               </Button>
             )}
           </Section>
@@ -180,17 +180,17 @@ export function ReviewStep({
           />
         </Section>
 
-        <Section title="Stakeholder" {...sectionProps("stakeholders")}>
+        <Section title="Stakeholders" {...sectionProps("stakeholders")}>
           <Rows
             rows={[
               ...values.stakeholders.map(
                 (s) =>
-                  [s.team || "Team fehlt", [s.people, s.role && `(${s.role})`].filter(Boolean).join(" ") || "–"] as [
+                  [s.team || "Team missing", [s.people, s.role && `(${s.role})`].filter(Boolean).join(" ") || "–"] as [
                     string,
                     string,
                   ],
               ),
-              ["Freigabeprozess", showText(values.approvalProcess)],
+              ["Approval process", showText(values.approvalProcess)],
             ]}
           />
         </Section>
@@ -198,8 +198,8 @@ export function ReviewStep({
         {mode === "edit" && (
           <TextAreaField
             path="changeNote"
-            label="Was wurde geändert?"
-            hint="Optional, erscheint im Versionsverlauf"
+            label="What changed?"
+            hint="Optional, shown in the version history"
             rows={2}
           />
         )}

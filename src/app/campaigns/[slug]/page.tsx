@@ -4,13 +4,13 @@ import { getCampaignBySlug, getCharterFormOptions } from "@/lib/queries";
 import { CampaignMindmap } from "@/components/mindmap/campaign-mindmap";
 import type { Selection } from "@/components/mindmap/detail-panel";
 
-// Core view: interactive campaign mindmap. Deep links: ?asset=<id> or ?kanal=<id>.
+// Core view: interactive campaign mind map. Deep links: ?asset=<id> or ?channel=<id>.
 export default async function CampaignMindmapPage({
   params,
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ asset?: string; kanal?: string }>;
+  searchParams: Promise<{ asset?: string; channel?: string }>;
 }) {
   const [{ slug }, query] = await Promise.all([params, searchParams]);
   const [campaign, options, user] = await Promise.all([
@@ -22,8 +22,8 @@ export default async function CampaignMindmapPage({
 
   const initialSelection: Selection | null = query.asset
     ? { kind: "asset", id: query.asset }
-    : query.kanal
-      ? { kind: "channel", id: query.kanal }
+    : query.channel
+      ? { kind: "channel", id: query.channel }
       : null;
 
   return (

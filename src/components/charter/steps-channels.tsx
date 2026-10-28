@@ -38,7 +38,7 @@ export function ChannelsStep() {
     const existing = channels.filter((c) => c.channelTypeId === type.id);
     if (existing.length > 0) {
       const hasContent = existing.some((c) => c.assets.length > 0 || c.kpis.length > 0);
-      if (hasContent && !window.confirm(`„${type.name}“ entfernen? Eingetragene KPIs und Assets gehen verloren.`)) {
+      if (hasContent && !window.confirm(`Remove “${type.name}”? Entered KPIs and assets will be lost.`)) {
         return;
       }
       update((v) => ({ ...v, channels: v.channels.filter((c) => c.channelTypeId !== type.id) }));
@@ -65,8 +65,8 @@ export function ChannelsStep() {
 
   return (
     <div>
-      <StepIntro title="Kanäle">
-        Kanäle auswählen. Die Funnel-Stufe ist vorbelegt und kann pro Kanal geändert werden.
+      <StepIntro title="Channels">
+        Select channels. The funnel stage is preset and can be changed per channel.
       </StepIntro>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -108,11 +108,11 @@ export function ChannelsStep() {
       <KpiDatalist />
 
       <h3 className="mt-8 text-sm font-semibold">
-        Ausgewählte Kanäle <span className="font-normal text-muted-foreground">({channels.length})</span>
+        Selected channels <span className="font-normal text-muted-foreground">({channels.length})</span>
       </h3>
       {channels.length === 0 ? (
         <p className="mt-2 text-sm text-muted-foreground">
-          Noch keine Kanäle gewählt. Kanäle lassen sich auch später in der Mindmap ergänzen.
+          No channels selected yet. Channels can also be added later in the mind map.
         </p>
       ) : (
         <div className="mt-3 space-y-4">
@@ -149,7 +149,7 @@ function ChannelCard({ channel, index }: { channel: ChannelFormValues; index: nu
     });
 
   const remove = () => {
-    if ((channel.assets.length > 0 || channel.kpis.length > 0) && !window.confirm(`„${channel.name}“ entfernen?`)) {
+    if ((channel.assets.length > 0 || channel.kpis.length > 0) && !window.confirm(`Remove “${channel.name}”?`)) {
       return;
     }
     update((v) => ({ ...v, channels: v.channels.filter((c) => c.clientId !== channel.clientId) }));
@@ -160,10 +160,10 @@ function ChannelCard({ channel, index }: { channel: ChannelFormValues; index: nu
       <div className="mb-3 flex items-center gap-2">
         <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{typeName}</span>
         <div className="ml-auto flex gap-1">
-          <Button variant="ghost" size="icon-sm" onClick={duplicate} aria-label="Kanal duplizieren" title="Duplizieren, z. B. für einen weiteren Markt">
+          <Button variant="ghost" size="icon-sm" onClick={duplicate} aria-label="Duplicate channel" title="Duplicate, e.g. for another market">
             <Copy />
           </Button>
-          <Button variant="ghost" size="icon-sm" onClick={remove} aria-label="Kanal entfernen">
+          <Button variant="ghost" size="icon-sm" onClick={remove} aria-label="Remove channel">
             <Trash2 />
           </Button>
         </div>
@@ -173,34 +173,34 @@ function ChannelCard({ channel, index }: { channel: ChannelFormValues; index: nu
         <TextField path={`${base}.name`} label="Name" required className="md:col-span-2" />
         <SelectField
           path={`${base}.funnelStage`}
-          label="Funnel-Stufe"
+          label="Funnel stage"
           className="md:col-span-2"
           placeholder="–"
           options={FUNNEL_STAGES.map((s) => ({ value: s, label: FUNNEL_STAGE_LABELS[s] }))}
         />
-        <SelectField path={`${base}.ownerId`} label="Owner" placeholder="Offen" className="md:col-span-2" options={userOptions} />
+        <SelectField path={`${base}.ownerId`} label="Owner" placeholder="Unassigned" className="md:col-span-2" options={userOptions} />
         <TextField path={`${base}.startDate`} label="Start" type="date" className="md:col-span-2" />
-        <TextField path={`${base}.endDate`} label="Ende" type="date" className="md:col-span-2" />
+        <TextField path={`${base}.endDate`} label="End" type="date" className="md:col-span-2" />
       </div>
 
       <div className="mt-4">
-        <p className="mb-2 text-sm font-medium">KPI-Ziele</p>
+        <p className="mb-2 text-sm font-medium">KPI targets</p>
         <div className="space-y-2">
           {channel.kpis.map((kpi, ki) => (
             <div key={kpi.clientId} className="grid grid-cols-[2fr_1fr_auto] items-start gap-2">
               <Field label={<span className="sr-only">KPI</span>} error={errors[`${base}.kpis.${ki}.name`]}>
                 <Input
                   list="kpi-options"
-                  placeholder="KPI, z. B. Reichweite"
+                  placeholder="KPI, e.g. reach"
                   value={kpi.name}
                   onChange={(e) => set(`${base}.kpis.${ki}.name`, e.target.value)}
                   aria-invalid={!!errors[`${base}.kpis.${ki}.name`]}
                 />
               </Field>
-              <Field label={<span className="sr-only">Zielwert</span>} error={errors[`${base}.kpis.${ki}.target`]}>
+              <Field label={<span className="sr-only">Target</span>} error={errors[`${base}.kpis.${ki}.target`]}>
                 <Input
                   inputMode="decimal"
-                  placeholder="Zielwert"
+                  placeholder="Target"
                   value={kpi.target}
                   onChange={(e) => set(`${base}.kpis.${ki}.target`, e.target.value)}
                   aria-invalid={!!errors[`${base}.kpis.${ki}.target`]}
@@ -210,7 +210,7 @@ function ChannelCard({ channel, index }: { channel: ChannelFormValues; index: nu
                 variant="ghost"
                 size="icon"
                 onClick={() => setKpis((kpis) => kpis.filter((k) => k.clientId !== kpi.clientId))}
-                aria-label="KPI entfernen"
+                aria-label="Remove KPI"
               >
                 <Trash2 />
               </Button>
@@ -221,7 +221,7 @@ function ChannelCard({ channel, index }: { channel: ChannelFormValues; index: nu
             size="sm"
             onClick={() => setKpis((kpis) => [...kpis, { clientId: newClientId(), name: "", target: "" }])}
           >
-            <Plus /> KPI-Ziel
+            <Plus /> KPI target
           </Button>
         </div>
       </div>
@@ -238,9 +238,9 @@ export function AssetsStep({ onGoToChannels }: { onGoToChannels: () => void }) {
     return (
       <div>
         <StepIntro title="Assets (optional)" />
-        <p className="text-sm text-muted-foreground">Assets hängen an Kanälen. Es sind noch keine Kanäle gewählt.</p>
+        <p className="text-sm text-muted-foreground">Assets belong to channels. No channels are selected yet.</p>
         <Button variant="outline" size="sm" className="mt-3" onClick={onGoToChannels}>
-          Zu den Kanälen
+          Go to channels
         </Button>
       </div>
     );
@@ -249,7 +249,7 @@ export function AssetsStep({ onGoToChannels }: { onGoToChannels: () => void }) {
   return (
     <div>
       <StepIntro title="Assets (optional)">
-        Erste Asset-Liste pro Kanal. Neue Assets starten im Status „Idee“.
+        Initial asset list per channel. New assets start with the status “Idea”.
       </StepIntro>
 
       <div className="space-y-5">
@@ -265,7 +265,7 @@ export function AssetsStep({ onGoToChannels }: { onGoToChannels: () => void }) {
               className={cn("rounded-lg border border-l-4 bg-card p-4", STAGE_STYLES[channel.funnelStage].border)}
             >
               <h3 className="mb-3 flex items-baseline gap-2 text-sm font-semibold">
-                {channel.name || "Unbenannter Kanal"}
+                {channel.name || "Untitled channel"}
                 <span className={cn("text-xs font-medium", STAGE_STYLES[channel.funnelStage].text)}>
                   {FUNNEL_STAGE_LABELS[channel.funnelStage]}
                 </span>
@@ -274,10 +274,10 @@ export function AssetsStep({ onGoToChannels }: { onGoToChannels: () => void }) {
               <div className="space-y-2">
                 {channel.assets.length > 0 && (
                   <div className="hidden grid-cols-[2fr_1fr_1fr_1fr_1fr_auto] gap-2 text-xs font-medium text-muted-foreground lg:grid">
-                    <span>Titel</span>
-                    <span>Typ</span>
+                    <span>Title</span>
+                    <span>Type</span>
                     <span>Format</span>
-                    <span>Fällig</span>
+                    <span>Due</span>
                     <span>Owner</span>
                     <span className="w-9" />
                   </div>
@@ -289,21 +289,21 @@ export function AssetsStep({ onGoToChannels }: { onGoToChannels: () => void }) {
                       key={asset.clientId}
                       className="grid items-start gap-2 border-b pb-2 last:border-b-0 lg:grid-cols-[2fr_1fr_1fr_1fr_1fr_auto] lg:border-b-0 lg:pb-0"
                     >
-                      <Field label={<span className="lg:sr-only">Titel</span>} error={errors[`${p}.title`]}>
+                      <Field label={<span className="lg:sr-only">Title</span>} error={errors[`${p}.title`]}>
                         <Input
                           value={asset.title}
                           onChange={(e) => set(`${p}.title`, e.target.value)}
                           aria-invalid={!!errors[`${p}.title`]}
-                          placeholder="z. B. Reel 9:16"
+                          placeholder="e.g. Reel 9:16"
                         />
                       </Field>
-                      <Field label={<span className="lg:sr-only">Typ</span>} error={errors[`${p}.assetType`]}>
+                      <Field label={<span className="lg:sr-only">Type</span>} error={errors[`${p}.assetType`]}>
                         <Select
                           value={asset.assetType}
                           onChange={(e) => set(`${p}.assetType`, e.target.value)}
                           aria-invalid={!!errors[`${p}.assetType`]}
                         >
-                          <option value="">Typ</option>
+                          <option value="">Type</option>
                           {ASSET_TYPES.map((t) => (
                             <option key={t} value={t}>
                               {ASSET_TYPE_LABELS[t]}
@@ -315,15 +315,15 @@ export function AssetsStep({ onGoToChannels }: { onGoToChannels: () => void }) {
                         <Input
                           value={asset.format}
                           onChange={(e) => set(`${p}.format`, e.target.value)}
-                          placeholder="z. B. 9:16, 15s"
+                          placeholder="e.g. 9:16, 15s"
                         />
                       </Field>
-                      <Field label={<span className="lg:sr-only">Fällig</span>} error={errors[`${p}.dueDate`]}>
+                      <Field label={<span className="lg:sr-only">Due</span>} error={errors[`${p}.dueDate`]}>
                         <Input type="date" value={asset.dueDate} onChange={(e) => set(`${p}.dueDate`, e.target.value)} />
                       </Field>
                       <Field label={<span className="lg:sr-only">Owner</span>}>
                         <Select value={asset.ownerId} onChange={(e) => set(`${p}.ownerId`, e.target.value)}>
-                          <option value="">Offen</option>
+                          <option value="">Unassigned</option>
                           {userOptions.map((u) => (
                             <option key={u.value} value={u.value}>
                               {u.label}
@@ -336,7 +336,7 @@ export function AssetsStep({ onGoToChannels }: { onGoToChannels: () => void }) {
                         size="icon"
                         className="lg:mt-0"
                         onClick={() => set(base, channel.assets.filter((a) => a.clientId !== asset.clientId))}
-                        aria-label="Asset entfernen"
+                        aria-label="Remove asset"
                       >
                         <Trash2 />
                       </Button>

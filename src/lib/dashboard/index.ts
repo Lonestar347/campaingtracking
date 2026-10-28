@@ -88,22 +88,22 @@ export interface DashboardFilters {
   to?: Date;
 }
 
-export const SORT_OPTIONS = ["start", "ampel", "name", "ende"] as const;
+export const SORT_OPTIONS = ["start", "urgency", "name", "end"] as const;
 export type DashboardSort = (typeof SORT_OPTIONS)[number];
 
-/** URL parameter names (German, user-visible in shared links). */
+/** URL parameter names (user-visible in shared links). */
 export const FILTER_PARAMS = {
   q: "q",
-  markets: "markt",
-  brand: "marke",
-  productLine: "produktlinie",
+  markets: "market",
+  brand: "brand",
+  productLine: "product",
   ownerId: "owner",
-  executionTypes: "umsetzung",
+  executionTypes: "execution",
   phases: "phase",
-  lights: "ampel",
-  from: "von",
-  to: "bis",
-  sort: "sortierung",
+  lights: "status",
+  from: "from",
+  to: "to",
+  sort: "sort",
 } as const;
 
 type SearchParams = Record<string, string | string[] | undefined>;
@@ -211,9 +211,9 @@ export function sortSummaries(summaries: readonly CampaignSummary[], sort: Dashb
     a.campaign.startDate.getTime() - b.campaign.startDate.getTime();
   const compare: Record<DashboardSort, (a: CampaignSummary, b: CampaignSummary) => number> = {
     start: byStart,
-    ende: (a, b) => a.campaign.endDate.getTime() - b.campaign.endDate.getTime() || byStart(a, b),
+    end: (a, b) => a.campaign.endDate.getTime() - b.campaign.endDate.getTime() || byStart(a, b),
     name: (a, b) => a.campaign.name.localeCompare(b.campaign.name, "de"),
-    ampel: (a, b) =>
+    urgency: (a, b) =>
       LIGHT_RANK[a.rollup.campaign.trafficLight] - LIGHT_RANK[b.rollup.campaign.trafficLight] ||
       b.rollup.campaign.overdueCount - a.rollup.campaign.overdueCount ||
       b.dueSoonCount - a.dueSoonCount ||
@@ -358,7 +358,7 @@ export function buildTimeline(
 
 export const MAX_COMPARE = 4;
 
-/** Parses the comparison selection (?k=slug-a,slug-b), deduplicated and capped. */
+/** Parses the comparison selection (?c=slug-a,slug-b), deduplicated and capped. */
 export function parseCompareSlugs(params: SearchParams): string[] {
-  return [...new Set(values(params, "k"))].slice(0, MAX_COMPARE);
+  return [...new Set(values(params, "c"))].slice(0, MAX_COMPARE);
 }

@@ -8,7 +8,7 @@ import type { Prisma } from "@prisma/client";
 import { requirePermission } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { validateLinkForm, type LinkFormValues } from "@/lib/links";
-import type { EntityActionResult } from "@/app/kampagnen/entity-actions";
+import type { EntityActionResult } from "@/app/campaigns/entity-actions";
 
 export type LinkTarget = { campaignId: string } | { channelId: string } | { assetId: string };
 
@@ -39,7 +39,7 @@ async function resolveOwner(
 
 function revalidateCampaign(slug: string) {
   revalidatePath("/");
-  revalidatePath(`/kampagnen/${slug}`, "layout");
+  revalidatePath(`/campaigns/${slug}`, "layout");
 }
 
 export async function createLink(target: LinkTarget, values: LinkFormValues): Promise<EntityActionResult> {
@@ -50,7 +50,7 @@ export async function createLink(target: LinkTarget, values: LinkFormValues): Pr
   if (!result.success) return { ok: false, fieldErrors: result.errors };
 
   const owner = await resolveOwner(target);
-  if (!owner) return { ok: false, formError: "Element nicht gefunden." };
+  if (!owner) return { ok: false, formError: "Item not found." };
 
   const id = await db.$transaction(async (tx) => {
     // Set exactly one owner foreign key, never fields passed through from the client.
@@ -80,9 +80,9 @@ export async function updateLink(linkId: string, values: LinkFormValues): Promis
   if (!result.success) return { ok: false, fieldErrors: result.errors };
 
   const link = await db.link.findUnique({ where: { id: linkId } });
-  if (!link) return { ok: false, formError: "Link nicht gefunden." };
+  if (!link) return { ok: false, formError: "Link not found." };
   const owner = await resolveOwner(link);
-  if (!owner) return { ok: false, formError: "Element nicht gefunden." };
+  if (!owner) return { ok: false, formError: "Item not found." };
 
   await db.$transaction(async (tx) => {
     await tx.link.update({ where: { id: linkId }, data: result.data });
@@ -110,9 +110,9 @@ export async function deleteLink(linkId: string): Promise<EntityActionResult> {
   if (!auth.user) return { ok: false, formError: auth.error };
 
   const link = await db.link.findUnique({ where: { id: linkId } });
-  if (!link) return { ok: false, formError: "Link nicht gefunden." };
+  if (!link) return { ok: false, formError: "Link not found." };
   const owner = await resolveOwner(link);
-  if (!owner) return { ok: false, formError: "Element nicht gefunden." };
+  if (!owner) return { ok: false, formError: "Item not found." };
 
   await db.$transaction(async (tx) => {
     await tx.link.delete({ where: { id: linkId } });

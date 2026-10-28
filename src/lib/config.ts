@@ -13,6 +13,6 @@ export const statusConfig: StatusConfig = {
 };
 
 export const appConfig = {
-  locale: "de-DE",
+  locale: "en-GB",
   currency: "EUR",
 } as const;

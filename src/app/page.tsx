@@ -68,39 +68,39 @@ export default async function DashboardPage({
             <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
             <p className="text-sm text-muted-foreground">
               {filtered
-                ? `${visible.length} von ${all.length} Kampagnen entsprechen den Filtern.`
-                : "Alle Kampagnen mit abgeleitetem Status."}
+                ? `${visible.length} of ${all.length} campaigns match the filters.`
+                : "All campaigns with their derived status."}
             </p>
           </div>
           {canCreate && (
-            <Link href="/kampagnen/neu" className={buttonVariants({ variant: "accent" })}>
-              <Plus /> Neue Kampagne
+            <Link href="/campaigns/new" className={buttonVariants({ variant: "accent" })}>
+              <Plus /> New campaign
             </Link>
           )}
         </div>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-          <Stat label="Kampagnen" value={stats.campaigns} />
+          <Stat label="Campaigns" value={stats.campaigns} />
           <Stat label="Live" value={stats.live} />
-          <Stat label="Kritisch (rot)" value={stats.red} tone="red" />
-          <Stat label="Überfällige Assets" value={stats.overdueAssets} tone="red" />
-          <Stat label="Bald fällig" value={stats.dueSoonAssets} tone="yellow" />
+          <Stat label="Critical (red)" value={stats.red} tone="red" />
+          <Stat label="Overdue assets" value={stats.overdueAssets} tone="red" />
+          <Stat label="Due soon" value={stats.dueSoonAssets} tone="yellow" />
         </div>
 
         <FilterBar filters={filters} sort={sort} options={filterOptions(campaigns)} />
 
         <div className="grid items-start gap-6 lg:grid-cols-[1fr_20rem]">
-          <section aria-label="Kampagnen">
+          <section aria-label="Campaigns">
             {all.length === 0 ? (
               <p className="rounded-xl border bg-card p-6 text-sm text-muted-foreground">
-                Noch keine Kampagnen. Neue Kampagne über die Launch Charter anlegen oder Beispieldaten laden mit{" "}
+                No campaigns yet. Create one via the launch charter or load sample data with{" "}
                 <code>npm run db:seed</code>.
               </p>
             ) : visible.length === 0 ? (
               <div className="rounded-xl border bg-card p-6 text-sm">
-                <p className="font-medium">Keine Kampagne passt zu den Filtern.</p>
+                <p className="font-medium">No campaign matches the filters.</p>
                 <Link href="/" className="mt-2 inline-block text-muted-foreground underline underline-offset-2">
-                  Filter zurücksetzen
+                  Reset filters
                 </Link>
               </div>
             ) : (
@@ -115,7 +115,7 @@ export default async function DashboardPage({
           <aside className="lg:sticky lg:top-4">
             <CriticalList overdue={overdueAssets(visible, now)} dueSoon={dueSoonAssets(visible, now)} />
             {filtered && (
-              <p className="mt-2 px-1 text-xs text-muted-foreground">Berücksichtigt nur die gefilterten Kampagnen.</p>
+              <p className="mt-2 px-1 text-xs text-muted-foreground">Only includes the filtered campaigns.</p>
             )}
           </aside>
         </div>

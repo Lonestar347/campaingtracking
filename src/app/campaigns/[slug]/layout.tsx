@@ -11,7 +11,7 @@ import { CampaignTabs } from "@/components/campaign-tabs";
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const campaign = await getCampaignBySlug(slug);
-  return { title: campaign ? `${campaign.name} · Kampagnen-Tracker` : "Kampagne nicht gefunden" };
+  return { title: campaign ? `${campaign.name} · Campaign Tracker` : "Campaign not found" };
 }
 
 export default async function CampaignLayout({
@@ -33,7 +33,7 @@ export default async function CampaignLayout({
           href="/"
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground print:hidden"
         >
-          <ChevronLeft className="size-4" /> Alle Kampagnen
+          <ChevronLeft className="size-4" /> All campaigns
         </Link>
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
           <h1 className="text-2xl font-semibold tracking-tight">{campaign.name}</h1>

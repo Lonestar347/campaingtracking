@@ -23,7 +23,7 @@ import {
   type ChannelEditValues,
 } from "@/lib/entities/forms";
 import type { FieldErrors } from "@/lib/validation/fields";
-import type { EntityActionResult } from "@/app/kampagnen/entity-actions";
+import type { EntityActionResult } from "@/app/campaigns/entity-actions";
 import type { CharterFormOptions } from "@/lib/queries";
 import { newClientId } from "@/components/charter/form-context";
 
@@ -68,7 +68,7 @@ function useEntityForm<V extends object>(
           setFormError(response.formError ?? null);
         }
       } catch {
-        setFormError("Speichern fehlgeschlagen. Bitte erneut versuchen.");
+        setFormError("Saving failed. Please try again.");
       }
     });
   };
@@ -105,7 +105,7 @@ function FormFooter({
         </Button>
         {onCancel && (
           <Button type="button" variant="ghost" onClick={onCancel} disabled={pending}>
-            Abbrechen
+            Cancel
           </Button>
         )}
         {onDelete && (
@@ -116,7 +116,7 @@ function FormFooter({
             onClick={onDelete}
             disabled={pending}
           >
-            <Trash2 /> {deleteLabel ?? "Löschen"}
+            <Trash2 /> {deleteLabel ?? "Delete"}
           </Button>
         )}
       </div>
@@ -139,7 +139,7 @@ function UserSelect({
 }) {
   return (
     <Select id={id} value={value} onChange={(e) => onChange(e.target.value)} aria-invalid={invalid}>
-      <option value="">Offen</option>
+      <option value="">Unassigned</option>
       {options.users.map((u) => (
         <option key={u.id} value={u.id}>
           {u.team ? `${u.name} (${u.team})` : u.name}
@@ -194,14 +194,14 @@ export function ChannelForm({
   return (
     <form onSubmit={onSubmit} className="space-y-4" noValidate>
       {mode === "create" && (
-        <Field label="Kanaltyp" htmlFor="ch-type" required error={errors.channelTypeId}>
+        <Field label="Channel type" htmlFor="ch-type" required error={errors.channelTypeId}>
           <Select
             id="ch-type"
             value={values.channelTypeId}
             onChange={(e) => selectType(e.target.value)}
             aria-invalid={!!errors.channelTypeId}
           >
-            <option value="">Bitte wählen</option>
+            <option value="">Please select</option>
             {FUNNEL_STAGES.map((stage) => (
               <optgroup key={stage} label={FUNNEL_STAGE_LABELS[stage]}>
                 {options.channelTypes
@@ -220,14 +220,14 @@ export function ChannelForm({
         <Input id="ch-name" value={values.name} onChange={(e) => set("name", e.target.value)} aria-invalid={!!errors.name} />
       </Field>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Funnel-Stufe" htmlFor="ch-stage" required error={errors.funnelStage}>
+        <Field label="Funnel stage" htmlFor="ch-stage" required error={errors.funnelStage}>
           <Select
             id="ch-stage"
             value={values.funnelStage}
             onChange={(e) => set("funnelStage", e.target.value)}
             aria-invalid={!!errors.funnelStage}
           >
-            <option value="">Bitte wählen</option>
+            <option value="">Please select</option>
             {FUNNEL_STAGES.map((s) => (
               <option key={s} value={s}>
                 {FUNNEL_STAGE_LABELS[s]}
@@ -241,7 +241,7 @@ export function ChannelForm({
         <Field label="Start" htmlFor="ch-start" error={errors.startDate}>
           <Input id="ch-start" type="date" value={values.startDate} onChange={(e) => set("startDate", e.target.value)} />
         </Field>
-        <Field label="Ende" htmlFor="ch-end" error={errors.endDate}>
+        <Field label="End" htmlFor="ch-end" error={errors.endDate}>
           <Input
             id="ch-end"
             type="date"
@@ -253,7 +253,7 @@ export function ChannelForm({
       </div>
 
       <div>
-        <p className="mb-2 text-sm font-medium">KPI-Ziele</p>
+        <p className="mb-2 text-sm font-medium">KPI targets</p>
         <div className="space-y-2">
           {values.kpis.map((kpi, index) => (
             <div key={kpi.clientId} className="grid grid-cols-[1.4fr_1fr_auto] items-start gap-2">
@@ -266,10 +266,10 @@ export function ChannelForm({
                   aria-invalid={!!errors[`kpis.${index}.name`]}
                 />
               </Field>
-              <Field label={<span className="sr-only">Zielwert</span>} error={errors[`kpis.${index}.target`]}>
+              <Field label={<span className="sr-only">Target</span>} error={errors[`kpis.${index}.target`]}>
                 <Input
                   inputMode="decimal"
-                  placeholder="Ziel"
+                  placeholder="Target"
                   value={kpi.target}
                   onChange={(e) => setKpi(index, "target", e.target.value)}
                   aria-invalid={!!errors[`kpis.${index}.target`]}
@@ -279,7 +279,7 @@ export function ChannelForm({
                 type="button"
                 variant="ghost"
                 size="icon"
-                aria-label="KPI entfernen"
+                aria-label="Remove KPI"
                 onClick={() => set("kpis", values.kpis.filter((_, i) => i !== index))}
               >
                 <Trash2 />
@@ -292,22 +292,22 @@ export function ChannelForm({
             size="sm"
             onClick={() => set("kpis", [...values.kpis, { clientId: newClientId(), name: "", target: "" }])}
           >
-            <Plus /> KPI-Ziel
+            <Plus /> KPI target
           </Button>
         </div>
       </div>
 
-      <Field label="Notizen" htmlFor="ch-notes">
+      <Field label="Notes" htmlFor="ch-notes">
         <Textarea id="ch-notes" value={values.notes} onChange={(e) => set("notes", e.target.value)} rows={3} />
       </Field>
 
       <FormFooter
         pending={pending}
         formError={formError}
-        submitLabel={mode === "create" ? "Kanal anlegen" : "Speichern"}
+        submitLabel={mode === "create" ? "Create channel" : "Save"}
         onCancel={onCancel}
         onDelete={onDelete}
-        deleteLabel="Kanal löschen"
+        deleteLabel="Delete channel"
       />
     </form>
   );
@@ -336,7 +336,7 @@ export function AssetForm({
 
   return (
     <form onSubmit={onSubmit} className="space-y-4" noValidate>
-      <Field label="Titel" htmlFor="as-title" required error={errors.title}>
+      <Field label="Title" htmlFor="as-title" required error={errors.title}>
         <Input
           id="as-title"
           value={values.title}
@@ -346,14 +346,14 @@ export function AssetForm({
         />
       </Field>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Typ" htmlFor="as-type" required error={errors.assetType}>
+        <Field label="Type" htmlFor="as-type" required error={errors.assetType}>
           <Select
             id="as-type"
             value={values.assetType}
             onChange={(e) => set("assetType", e.target.value)}
             aria-invalid={!!errors.assetType}
           >
-            <option value="">Bitte wählen</option>
+            <option value="">Please select</option>
             {ASSET_TYPES.map((t) => (
               <option key={t} value={t}>
                 {ASSET_TYPE_LABELS[t]}
@@ -374,31 +374,31 @@ export function AssetForm({
           <Input
             id="as-format"
             value={values.format}
-            placeholder="z. B. 9:16, 15s"
+            placeholder="e.g. 9:16, 15s"
             onChange={(e) => set("format", e.target.value)}
           />
         </Field>
-        <Field label="Fällig am" htmlFor="as-due" error={errors.dueDate}>
+        <Field label="Due date" htmlFor="as-due" error={errors.dueDate}>
           <Input id="as-due" type="date" value={values.dueDate} onChange={(e) => set("dueDate", e.target.value)} />
         </Field>
         <Field label="Owner" htmlFor="as-owner" error={errors.ownerId}>
           <UserSelect id="as-owner" value={values.ownerId} onChange={(v) => set("ownerId", v)} options={options} />
         </Field>
-        <Field label="Freigabe durch" htmlFor="as-approver" error={errors.approverId} className="col-span-2">
+        <Field label="Approver" htmlFor="as-approver" error={errors.approverId} className="col-span-2">
           <UserSelect id="as-approver" value={values.approverId} onChange={(v) => set("approverId", v)} options={options} />
         </Field>
       </div>
-      <Field label="Notizen" htmlFor="as-notes">
+      <Field label="Notes" htmlFor="as-notes">
         <Textarea id="as-notes" value={values.notes} onChange={(e) => set("notes", e.target.value)} rows={3} />
       </Field>
 
       <FormFooter
         pending={pending}
         formError={formError}
-        submitLabel={mode === "create" ? "Asset anlegen" : "Speichern"}
+        submitLabel={mode === "create" ? "Create asset" : "Save"}
         onCancel={onCancel}
         onDelete={onDelete}
-        deleteLabel="Asset löschen"
+        deleteLabel="Delete asset"
       />
     </form>
   );

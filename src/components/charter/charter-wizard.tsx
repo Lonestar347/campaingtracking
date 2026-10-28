@@ -16,13 +16,13 @@ import {
   type WizardStepId,
 } from "@/lib/charter/form";
 import type { CharterFormOptions } from "@/lib/queries";
-import type { CharterActionResult } from "@/app/kampagnen/actions";
+import type { CharterActionResult } from "@/app/campaigns/actions";
 import { CharterFormProvider, setIn } from "@/components/charter/form-context";
 import { BasisStep, BudgetStep, LinksStep, StakeholdersStep, StrategyStep } from "@/components/charter/steps-basic";
 import { AssetsStep, ChannelsStep } from "@/components/charter/steps-channels";
 import { ReviewStep } from "@/components/charter/review-step";
 
-const DRAFT_KEY = "kampagnen-tracker:charter-draft";
+const DRAFT_KEY = "campaign-tracker:charter-draft";
 
 function readDraft(): CharterFormValues | null {
   try {
@@ -48,7 +48,7 @@ export interface CharterWizardProps {
   initialValues?: CharterFormValues;
   defaultOwnerId?: string;
   onSubmit: (values: CharterFormValues) => Promise<CharterActionResult>;
-  /** Path suffix after /kampagnen/[slug] to open after a successful save, e.g. "/charter". */
+  /** Path suffix after /campaigns/[slug] to open after a successful save, e.g. "/charter". */
   successSuffix?: string;
   cancelHref: string;
 }
@@ -159,7 +159,7 @@ export function CharterWizard({
         if (result.ok) {
           submitted.current = true;
           if (mode === "create") writeDraft(null);
-          router.push(`/kampagnen/${result.slug}${successSuffix}`);
+          router.push(`/campaigns/${result.slug}${successSuffix}`);
           router.refresh();
           return;
         }
@@ -170,7 +170,7 @@ export function CharterWizard({
           if (target) goTo(target);
         }
       } catch {
-        setFormError("Speichern fehlgeschlagen. Bitte erneut versuchen.");
+        setFormError("Saving failed. Please try again.");
       }
     });
   };
@@ -180,7 +180,7 @@ export function CharterWizard({
       {draft && (
         <div className="mb-6 flex flex-wrap items-center gap-3 rounded-lg border border-josera-gold bg-josera-gold/10 px-4 py-3 text-sm">
           <span className="flex-1">
-            Es gibt einen ungespeicherten Entwurf{draft.basis.name ? ` („${draft.basis.name}“)` : ""}.
+            There is an unsaved draft{draft.basis.name ? ` (“${draft.basis.name}”)` : ""}.
           </span>
           <Button
             size="sm"
@@ -191,7 +191,7 @@ export function CharterWizard({
               setDraft(null);
             }}
           >
-            Wiederherstellen
+            Restore
           </Button>
           <Button
             size="sm"
@@ -201,13 +201,13 @@ export function CharterWizard({
               setDraft(null);
             }}
           >
-            Verwerfen
+            Discard
           </Button>
         </div>
       )}
 
       <div className="grid gap-8 lg:grid-cols-[13rem_1fr]">
-        <nav aria-label="Schritte" className="min-w-0">
+        <nav aria-label="Steps" className="min-w-0">
           <ol className="flex gap-1 overflow-x-auto pb-2 lg:flex-col lg:overflow-visible lg:pb-0">
             {steps.map((id, index) => {
               const meta = WIZARD_STEPS.find((s) => s.id === id)!;
@@ -266,22 +266,22 @@ export function CharterWizard({
           <div className="mt-4 flex items-center gap-2">
             {stepIndex > 0 ? (
               <Button variant="outline" onClick={() => goTo(steps[stepIndex - 1])} disabled={pending}>
-                <ArrowLeft /> Zurück
+                <ArrowLeft /> Back
               </Button>
             ) : (
               <Button variant="ghost" onClick={() => router.push(cancelHref)}>
-                Abbrechen
+                Cancel
               </Button>
             )}
             <div className="ml-auto">
               {isLast ? (
                 <Button variant="accent" onClick={submit} disabled={pending}>
                   {pending ? <Loader2 className="animate-spin" /> : <Check />}
-                  {mode === "create" ? "Kampagne anlegen" : "Neue Version speichern"}
+                  {mode === "create" ? "Create campaign" : "Save new version"}
                 </Button>
               ) : (
                 <Button onClick={next}>
-                  Weiter <ArrowRight />
+                  Next <ArrowRight />
                 </Button>
               )}
             </div>

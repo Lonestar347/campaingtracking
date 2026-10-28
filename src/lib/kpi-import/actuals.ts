@@ -2,7 +2,7 @@
 
 export type Aggregation = "sum" | "avg";
 
-const RATE_KPI = /(%|rate|quote|ctr|cpm|cpc|cpa|cpl|cpv|roas|roi|verweildauer|dauer|durchschnitt|ø|avg|average|frequenz|frequency)/i;
+const RATE_KPI = /(%|rate|quote|ctr|cpm|cpc|cpa|cpl|cpv|roas|roi|verweildauer|dauer|durchschnitt|ø|avg|average|frequenz|frequency|time on|duration)/i;
 const COST_KPI = /(cpm|cpc|cpa|cpl|cpv|kosten|cost)/i;
 
 /** Rates and averages are averaged across values; counts and amounts are summed. */

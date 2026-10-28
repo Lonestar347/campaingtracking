@@ -18,10 +18,10 @@ export interface StatusAsset {
   dueDate: Date | null;
 }
 
-const DONE_STATUSES: ReadonlySet<string> = new Set<AssetStatus>(["FERTIG", "LIVE"]);
+const DONE_STATUSES: ReadonlySet<string> = new Set<AssetStatus>(["DONE", "LIVE"]);
 
 /** Statuses that count as "in approval or later" for the yellow rule. */
-const APPROVAL_OR_LATER: ReadonlySet<string> = new Set<AssetStatus>(["FREIGABE", "FERTIG", "LIVE"]);
+const APPROVAL_OR_LATER: ReadonlySet<string> = new Set<AssetStatus>(["APPROVAL", "DONE", "LIVE"]);
 
 export function isDone(asset: StatusAsset): boolean {
   return DONE_STATUSES.has(asset.status);
@@ -29,7 +29,7 @@ export function isDone(asset: StatusAsset): boolean {
 
 /** Cancelled assets are out of scope: they count neither for progress nor for the traffic light. */
 export function isCancelled(asset: StatusAsset): boolean {
-  return asset.status === "ABGEBROCHEN";
+  return asset.status === "CANCELLED";
 }
 
 export interface Progress {
@@ -39,7 +39,7 @@ export interface Progress {
   ratio: number;
 }
 
-/** Share of assets in FERTIG or LIVE, e.g. 3/5. Cancelled assets are excluded. */
+/** Share of assets in DONE or LIVE, e.g. 3/5. Cancelled assets are excluded. */
 export function computeProgress(assets: readonly StatusAsset[]): Progress {
   const relevant = assets.filter((a) => !isCancelled(a));
   const done = relevant.filter(isDone).length;
@@ -86,21 +86,21 @@ export interface CampaignPhaseInput {
 }
 
 /**
- * - ABGESCHLOSSEN: end date has passed
+ * - COMPLETED: end date has passed
  * - LIVE: campaign period has started, or any asset is already live
- * - IN_ARBEIT: any (non-cancelled) asset has moved beyond IDEE
- * - PLANUNG: otherwise
+ * - IN_PROGRESS: any (non-cancelled) asset has moved beyond IDEA
+ * - PLANNING: otherwise
  */
 export function computeCampaignPhase(
   campaign: CampaignPhaseInput,
   now: Date,
   config: StatusConfig = statusConfig,
 ): CampaignPhase {
-  if (daysBetween(campaign.endDate, now, config.timeZone) > 0) return "ABGESCHLOSSEN";
+  if (daysBetween(campaign.endDate, now, config.timeZone) > 0) return "COMPLETED";
   if (daysBetween(campaign.startDate, now, config.timeZone) >= 0) return "LIVE";
   if (campaign.assets.some((a) => a.status === "LIVE")) return "LIVE";
-  if (campaign.assets.some((a) => !isCancelled(a) && a.status !== "IDEE")) return "IN_ARBEIT";
-  return "PLANUNG";
+  if (campaign.assets.some((a) => !isCancelled(a) && a.status !== "IDEA")) return "IN_PROGRESS";
+  return "PLANNING";
 }
 
 export interface StatusSummary {

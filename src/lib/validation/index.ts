@@ -16,7 +16,7 @@ export const userRoleSchema = z.enum(USER_ROLES);
 export const executionTypeSchema = z.enum(EXECUTION_TYPES);
 export const linkTypeSchema = z.enum(LINK_TYPES);
 
-export const marketsSchema = z.array(z.enum(MARKETS)).min(1, "Mindestens einen Markt auswählen");
+export const marketsSchema = z.array(z.enum(MARKETS)).min(1, "Select at least one market");
 export const partnersSchema = z.array(z.string().trim().min(1));
 
 /** KPI name -> target value. */

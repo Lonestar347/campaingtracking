@@ -119,8 +119,8 @@ export function emptyCharterForm(defaults: { ownerId?: string } = {}): CharterFo
 
 const assetSchema = z.object({
   clientId: z.string(),
-  title: requiredText("Titel angeben"),
-  assetType: z.enum(ASSET_TYPES, { errorMap: () => ({ message: "Asset-Typ wählen" }) }),
+  title: requiredText("Enter a title"),
+  assetType: z.enum(ASSET_TYPES, { errorMap: () => ({ message: "Select an asset type" }) }),
   format: optionalText,
   dueDate: dateField(false),
   ownerId: optionalId,
@@ -129,9 +129,9 @@ const assetSchema = z.object({
 const channelSchema = z
   .object({
     clientId: z.string(),
-    channelTypeId: requiredText("Kanaltyp fehlt"),
+    channelTypeId: requiredText("Channel type missing"),
     funnelStage: z.enum(FUNNEL_STAGES),
-    name: requiredText("Namen angeben"),
+    name: requiredText("Enter a name"),
     ownerId: optionalId,
     startDate: dateField(false),
     endDate: dateField(false),
@@ -142,7 +142,7 @@ const channelSchema = z
 
 const stakeholderSchema = z.object({
   clientId: z.string(),
-  team: requiredText("Team angeben"),
+  team: requiredText("Enter a team"),
   people: z.string().transform((v) =>
     v
       .split(",")
@@ -155,18 +155,18 @@ const stakeholderSchema = z.object({
 export const charterFormSchema = z
   .object({
     basis: z.object({
-      name: requiredText("Kampagnennamen angeben").max(120, "Maximal 120 Zeichen"),
+      name: requiredText("Enter a campaign name").max(120, "Maximum 120 characters"),
       description: optionalText,
       brand: optionalText,
       productLine: optionalText,
       markets: z
         .array(z.enum(MARKETS))
-        .min(1, "Mindestens einen Markt auswählen"),
+        .min(1, "Select at least one market"),
       startDate: dateField(true),
       endDate: dateField(true),
-      ownerId: requiredText("Owner auswählen"),
+      ownerId: requiredText("Select an owner"),
       executionType: z.enum(EXECUTION_TYPES, {
-        errorMap: () => ({ message: "Agentur, Inhouse oder Gemischt wählen" }),
+        errorMap: () => ({ message: "Select agency, in-house or mixed" }),
       }),
       partners: z.string().transform((v) =>
         v
@@ -207,7 +207,7 @@ export const charterFormSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["budget", "byStage"],
-        message: "Die Aufteilung ist höher als das Gesamtbudget",
+        message: "The split exceeds the total budget",
       });
     }
   });
@@ -218,14 +218,14 @@ export type CharterInput = z.output<typeof charterFormSchema>;
 // Wizard steps and error mapping
 
 export const WIZARD_STEPS = [
-  { id: "basis", title: "Basis" },
-  { id: "strategy", title: "Strategie" },
+  { id: "basis", title: "Basics" },
+  { id: "strategy", title: "Strategy" },
   { id: "budget", title: "Budget" },
-  { id: "channels", title: "Kanäle" },
+  { id: "channels", title: "Channels" },
   { id: "assets", title: "Assets" },
   { id: "links", title: "Links" },
   { id: "stakeholders", title: "Stakeholder" },
-  { id: "review", title: "Prüfen" },
+  { id: "review", title: "Review" },
 ] as const;
 export type WizardStepId = (typeof WIZARD_STEPS)[number]["id"];
 

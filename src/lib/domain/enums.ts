@@ -13,26 +13,26 @@ export const FUNNEL_STAGE_LABELS: Record<FunnelStage, string> = {
 
 /** Ordered workflow statuses followed by the two side statuses. */
 export const ASSET_STATUSES = [
-  "IDEE",
+  "IDEA",
   "BRIEFING",
-  "IN_PRODUKTION",
-  "FREIGABE",
-  "FERTIG",
+  "IN_PRODUCTION",
+  "APPROVAL",
+  "DONE",
   "LIVE",
-  "PAUSIERT",
-  "ABGEBROCHEN",
+  "PAUSED",
+  "CANCELLED",
 ] as const;
 export type AssetStatus = (typeof ASSET_STATUSES)[number];
 
 export const ASSET_STATUS_LABELS: Record<AssetStatus, string> = {
-  IDEE: "Idee",
+  IDEA: "Idea",
   BRIEFING: "Briefing",
-  IN_PRODUKTION: "In Produktion",
-  FREIGABE: "Freigabe",
-  FERTIG: "Fertig",
+  IN_PRODUCTION: "In production",
+  APPROVAL: "Approval",
+  DONE: "Done",
   LIVE: "Live",
-  PAUSIERT: "Pausiert",
-  ABGEBROCHEN: "Abgebrochen",
+  PAUSED: "Paused",
+  CANCELLED: "Cancelled",
 };
 
 export const ASSET_TYPES = [
@@ -55,7 +55,7 @@ export const ASSET_TYPE_LABELS: Record<AssetType, string> = {
   PRINT: "Print",
   DISPLAY: "Display",
   TEXT: "Text",
-  OTHER: "Sonstiges",
+  OTHER: "Other",
 };
 
 export const USER_ROLES = ["admin", "editor", "viewer"] as const;
@@ -65,9 +65,9 @@ export const EXECUTION_TYPES = ["agency", "inhouse", "mixed"] as const;
 export type ExecutionType = (typeof EXECUTION_TYPES)[number];
 
 export const EXECUTION_TYPE_LABELS: Record<ExecutionType, string> = {
-  agency: "Agentur",
-  inhouse: "Inhouse",
-  mixed: "Gemischt",
+  agency: "Agency",
+  inhouse: "In-house",
+  mixed: "Mixed",
 };
 
 export const MARKETS = ["DE", "AT", "PL"] as const;
@@ -91,14 +91,14 @@ export type Team = (typeof TEAMS)[number];
 export const ENTITY_TYPES = ["campaign", "charter", "channel", "asset", "kpi_report"] as const;
 export type EntityType = (typeof ENTITY_TYPES)[number];
 
-export const CAMPAIGN_PHASES = ["PLANUNG", "IN_ARBEIT", "LIVE", "ABGESCHLOSSEN"] as const;
+export const CAMPAIGN_PHASES = ["PLANNING", "IN_PROGRESS", "LIVE", "COMPLETED"] as const;
 export type CampaignPhase = (typeof CAMPAIGN_PHASES)[number];
 
 export const CAMPAIGN_PHASE_LABELS: Record<CampaignPhase, string> = {
-  PLANUNG: "Planung",
-  IN_ARBEIT: "In Arbeit",
+  PLANNING: "Planning",
+  IN_PROGRESS: "In progress",
   LIVE: "Live",
-  ABGESCHLOSSEN: "Abgeschlossen",
+  COMPLETED: "Completed",
 };
 
 export const TRAFFIC_LIGHTS = ["RED", "YELLOW", "GREEN"] as const;

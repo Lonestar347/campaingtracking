@@ -10,9 +10,9 @@ import type { Progress } from "@/lib/status";
 import { STAGE_STYLES } from "@/components/stage-styles";
 
 const TRAFFIC_LIGHT_STYLES: Record<TrafficLight, { dot: string; label: string }> = {
-  RED: { dot: "bg-status-red", label: "Kritisch" },
-  YELLOW: { dot: "bg-status-yellow", label: "Achtung" },
-  GREEN: { dot: "bg-status-green", label: "Im Plan" },
+  RED: { dot: "bg-status-red", label: "Critical" },
+  YELLOW: { dot: "bg-status-yellow", label: "At risk" },
+  GREEN: { dot: "bg-status-green", label: "On track" },
 };
 
 export function TrafficLightBadge({ value, className }: { value: TrafficLight; className?: string }) {

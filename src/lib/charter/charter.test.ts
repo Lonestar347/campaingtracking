@@ -21,7 +21,7 @@ function validForm(): CharterFormValues {
     partners: "Agentur A\n\n  Produktion B  ",
   };
   form.strategy.objective = "Bekanntheit steigern";
-  form.budget = { total: "100.000", byStage: { AWARENESS: "60.000", CONSIDERATION: "", SALES: "40.000" } };
+  form.budget = { total: "100,000", byStage: { AWARENESS: "60,000", CONSIDERATION: "", SALES: "40,000" } };
   form.channels = [
     {
       clientId: "c1",
@@ -31,7 +31,7 @@ function validForm(): CharterFormValues {
       ownerId: "",
       startDate: "",
       endDate: "",
-      kpis: [{ clientId: "k1", name: "Impressions", target: "5.000.000" }],
+      kpis: [{ clientId: "k1", name: "Impressions", target: "5,000,000" }],
       assets: [
         { clientId: "a1", title: "Spot 20s", assetType: "VIDEO", format: "16:9", dueDate: "2026-10-20", ownerId: "user-2" },
       ],
@@ -82,21 +82,21 @@ describe("validateCharterForm", () => {
   it("rejects end before start, invalid money and an oversized budget split", () => {
     const form = validForm();
     form.basis.endDate = "2026-10-01";
-    form.budget = { total: "1.000", byStage: { AWARENESS: "800", CONSIDERATION: "abc", SALES: "500" } };
+    form.budget = { total: "1,000", byStage: { AWARENESS: "800", CONSIDERATION: "abc", SALES: "500" } };
     const result = validateCharterForm(form);
     expect(result.success).toBe(false);
     if (result.success) return;
-    expect(result.errors["basis.endDate"]).toBe("Ende liegt vor dem Start");
-    expect(result.errors["budget.byStage.CONSIDERATION"]).toMatch(/Ungültiger Betrag/);
+    expect(result.errors["basis.endDate"]).toBe("End is before start");
+    expect(result.errors["budget.byStage.CONSIDERATION"]).toMatch(/Invalid amount/);
   });
 
   it("flags a budget split above the total", () => {
     const form = validForm();
-    form.budget = { total: "1.000", byStage: { AWARENESS: "800", CONSIDERATION: "", SALES: "500" } };
+    form.budget = { total: "1,000", byStage: { AWARENESS: "800", CONSIDERATION: "", SALES: "500" } };
     const result = validateCharterForm(form);
     expect(result.success).toBe(false);
     if (result.success) return;
-    expect(result.errors["budget.byStage"]).toMatch(/höher als das Gesamtbudget/);
+    expect(result.errors["budget.byStage"]).toMatch(/exceeds the total budget/);
   });
 
   it("validates channels, KPIs, assets and links", () => {
@@ -107,9 +107,9 @@ describe("validateCharterForm", () => {
     const result = validateCharterForm(form);
     expect(result.success).toBe(false);
     if (result.success) return;
-    expect(result.errors["channels.0.kpis.1.name"]).toBe("KPI doppelt");
-    expect(result.errors["channels.0.kpis.1.target"]).toBe("Zielwert als Zahl angeben");
-    expect(result.errors["channels.0.assets.0.title"]).toBe("Titel angeben");
+    expect(result.errors["channels.0.kpis.1.name"]).toBe("Duplicate KPI");
+    expect(result.errors["channels.0.kpis.1.target"]).toBe("Enter the target as a number");
+    expect(result.errors["channels.0.assets.0.title"]).toBe("Enter a title");
     expect(result.errors["links.sharepoint"]).toMatch(/URL/);
   });
 });
@@ -141,7 +141,7 @@ describe("buildCampaignPlan", () => {
     expect(plan.charterData.basis?.startDate).toBe("2026-11-01");
     expect(plan.charterData.budget.byFunnelStageCents).toEqual({ AWARENESS: 6_000_000, SALES: 4_000_000 });
     expect(plan.links).toEqual([
-      { type: "frontify", url: "https://example.frontify.com/x", label: "Frontify-Ordner", embed: false },
+      { type: "frontify", url: "https://example.frontify.com/x", label: "Frontify folder", embed: false },
     ]);
 
     expect(plan.channels).toHaveLength(2);
@@ -153,7 +153,7 @@ describe("buildCampaignPlan", () => {
     });
     expect(plan.channels[0].assets[0]).toMatchObject({
       title: "Spot 20s",
-      status: "IDEE",
+      status: "IDEA",
       ownerId: "user-2",
       dueDate: new Date("2026-10-20T00:00:00Z"),
     });
@@ -168,13 +168,13 @@ describe("diffCharterLinks", () => {
         { frontify: "https://a", sharepoint: "https://s" },
         { frontify: "https://b", sharepoint: "https://s", lookerStudio: undefined },
       ),
-    ).toEqual([{ type: "frontify", label: "Frontify-Ordner", remove: "https://a", add: "https://b" }]);
+    ).toEqual([{ type: "frontify", label: "Frontify folder", remove: "https://a", add: "https://b" }]);
   });
 
   it("handles added and removed links", () => {
     expect(diffCharterLinks({ sharepoint: "https://s" }, { lookerStudio: "https://l" } as never)).toEqual([
-      { type: "sharepoint", label: "SharePoint-Ordner", remove: "https://s", add: undefined },
-      { type: "looker_studio", label: "Looker-Studio-Report", remove: undefined, add: "https://l" },
+      { type: "sharepoint", label: "SharePoint folder", remove: "https://s", add: undefined },
+      { type: "looker_studio", label: "Looker Studio report", remove: undefined, add: "https://l" },
     ]);
   });
 });
@@ -193,6 +193,6 @@ describe("changedCharterSections", () => {
       links: {},
       stakeholders: [{ team: "Design", people: [] }],
     };
-    expect(changedCharterSections(base, next)).toEqual(["Budget", "Stakeholder"]);
+    expect(changedCharterSections(base, next)).toEqual(["Budget", "Stakeholders"]);
   });
 });

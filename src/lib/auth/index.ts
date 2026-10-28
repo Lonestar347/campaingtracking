@@ -52,12 +52,12 @@ export function can(role: UserRole, permission: Permission): boolean {
   return PERMISSIONS[role].includes(permission);
 }
 
-/** For server actions: the current user if they have `permission`, else a German error message. */
+/** For server actions: the current user if they have `permission`, else an error message. */
 export async function requirePermission(
   permission: Permission,
 ): Promise<{ user: SessionUser; error?: undefined } | { user?: undefined; error: string }> {
   const user = await getCurrentUser();
-  if (!user) return { error: "Nicht angemeldet." };
-  if (!can(user.role, permission)) return { error: "Keine Berechtigung zum Bearbeiten." };
+  if (!user) return { error: "Not signed in." };
+  if (!can(user.role, permission)) return { error: "You do not have permission to make changes." };
   return { user };
 }

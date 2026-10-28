@@ -140,7 +140,7 @@ model Asset {
   title      String
   assetType  String // VIDEO | STATIC | CAROUSEL | ...
   format     String? // format / specs, e.g. "9:16, 15s"
-  status     String    @default("IDEE")
+  status     String    @default("IDEA")
   dueDate    DateTime?
   ownerId    String?
   approverId String?
@@ -252,7 +252,7 @@ model ActivityLog {
   entityType String
   entityId   String
   action     String // e.g. "created", "status_changed", "charter_updated"
-  details    Json? // e.g. { "from": "BRIEFING", "to": "IN_PRODUKTION" }
+  details    Json? // e.g. { "from": "BRIEFING", "to": "IN_PRODUCTION" }
   userId     String?
   createdAt  DateTime @default(now())
 

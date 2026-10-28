@@ -60,7 +60,7 @@ const red = campaign({
       id: "c1",
       name: "Social",
       funnelStage: "AWARENESS",
-      assets: [asset("a1", "BRIEFING", "2026-10-20"), asset("a2", "IDEE", "2026-10-25"), asset("a3", "LIVE", "2026-10-01")],
+      assets: [asset("a1", "BRIEFING", "2026-10-20"), asset("a2", "IDEA", "2026-10-25"), asset("a3", "LIVE", "2026-10-01")],
     },
   ],
 });
@@ -80,7 +80,7 @@ const green = campaign({
   markets: ["DE", "PL"],
   startDate: day("2027-03-01"),
   endDate: day("2027-04-30"),
-  channels: [{ id: "c3", name: "Amazon", funnelStage: "SALES", assets: [asset("a5", "IDEE", "2027-02-01")] }],
+  channels: [{ id: "c3", name: "Amazon", funnelStage: "SALES", assets: [asset("a5", "IDEA", "2027-02-01")] }],
 });
 
 const summaries = summarizeCampaigns([green, yellow, red], NOW, config);
@@ -90,17 +90,17 @@ const filtered = (params: Record<string, string>) =>
 describe("parseFilters / filtersToSearchParams", () => {
   it("parses, validates and round-trips URL parameters", () => {
     const filters = parseFilters({
-      markt: "DE,XX",
-      phase: ["LIVE", "PLANUNG"],
-      ampel: "RED",
-      umsetzung: "agency",
-      von: "2026-11-01",
-      bis: "kein-datum",
+      market: "DE,XX",
+      phase: ["LIVE", "PLANNING"],
+      status: "RED",
+      execution: "agency",
+      from: "2026-11-01",
+      to: "no-date",
       q: "hund",
     });
     expect(filters).toMatchObject({
       markets: ["DE"],
-      phases: ["LIVE", "PLANUNG"],
+      phases: ["LIVE", "PLANNING"],
       lights: ["RED"],
       executionTypes: ["agency"],
       q: "hund",
@@ -109,16 +109,16 @@ describe("parseFilters / filtersToSearchParams", () => {
     expect(filters.to).toBeUndefined();
     expect(countActiveFilters(filters)).toBe(6);
 
-    const params = filtersToSearchParams(filters, "ampel");
+    const params = filtersToSearchParams(filters, "urgency");
     expect(params.toString()).toBe(
-      "q=hund&markt=DE&umsetzung=agency&phase=LIVE%2CPLANUNG&ampel=RED&von=2026-11-01&sortierung=ampel",
+      "q=hund&market=DE&execution=agency&phase=LIVE%2CPLANNING&status=RED&from=2026-11-01&sort=urgency",
     );
     expect(parseFilters(Object.fromEntries(params))).toEqual(filters);
   });
 
   it("falls back to start sorting", () => {
-    expect(parseSort({ sortierung: "ampel" })).toBe("ampel");
-    expect(parseSort({ sortierung: "unsinn" })).toBe("start");
+    expect(parseSort({ sort: "urgency" })).toBe("urgency");
+    expect(parseSort({ sort: "nonsense" })).toBe("start");
   });
 });
 
@@ -128,27 +128,27 @@ describe("matchesFilters", () => {
   });
 
   it("filters by market (any selected market)", () => {
-    expect(filtered({ markt: "AT" })).toEqual(["rot"]);
-    expect(filtered({ markt: "AT,PL" })).toEqual(["gruen", "gelb", "rot"]);
+    expect(filtered({ market: "AT" })).toEqual(["rot"]);
+    expect(filtered({ market: "AT,PL" })).toEqual(["gruen", "gelb", "rot"]);
   });
 
   it("filters by brand, product line, owner and execution type", () => {
-    expect(filtered({ marke: "Marke A" })).toEqual(["gelb", "rot"]);
-    expect(filtered({ produktlinie: "Katze" })).toEqual(["gelb"]);
+    expect(filtered({ brand: "Marke A" })).toEqual(["gelb", "rot"]);
+    expect(filtered({ product: "Katze" })).toEqual(["gelb"]);
     expect(filtered({ owner: "u2" })).toEqual(["gelb"]);
-    expect(filtered({ umsetzung: "agency" })).toEqual(["rot"]);
+    expect(filtered({ execution: "agency" })).toEqual(["rot"]);
   });
 
   it("filters by derived phase and traffic light", () => {
     expect(filtered({ phase: "LIVE" })).toEqual(["rot"]);
-    expect(filtered({ phase: "PLANUNG,IN_ARBEIT" })).toEqual(["gruen", "gelb"]);
-    expect(filtered({ ampel: "YELLOW,GREEN" })).toEqual(["gruen", "gelb"]);
+    expect(filtered({ phase: "PLANNING,IN_PROGRESS" })).toEqual(["gruen", "gelb"]);
+    expect(filtered({ status: "YELLOW,GREEN" })).toEqual(["gruen", "gelb"]);
   });
 
   it("filters by overlapping period, inclusive", () => {
-    expect(filtered({ von: "2026-12-01" })).toEqual(["gruen", "gelb"]);
-    expect(filtered({ von: "2026-11-30", bis: "2026-11-30" })).toEqual(["gelb", "rot"]);
-    expect(filtered({ bis: "2026-10-31" })).toEqual(["rot"]);
+    expect(filtered({ from: "2026-12-01" })).toEqual(["gruen", "gelb"]);
+    expect(filtered({ from: "2026-11-30", to: "2026-11-30" })).toEqual(["gelb", "rot"]);
+    expect(filtered({ to: "2026-10-31" })).toEqual(["rot"]);
   });
 
   it("searches name, brand and product line case-insensitively", () => {
@@ -164,7 +164,7 @@ describe("sortSummaries", () => {
   });
 
   it("sorts by severity", () => {
-    expect(sortSummaries(summaries, "ampel").map((s) => s.campaign.slug)).toEqual(["rot", "gelb", "gruen"]);
+    expect(sortSummaries(summaries, "urgency").map((s) => s.campaign.slug)).toEqual(["rot", "gelb", "gruen"]);
   });
 
   it("sorts by name (German collation)", () => {
@@ -227,7 +227,7 @@ describe("buildTimeline", () => {
 
 describe("parseCompareSlugs", () => {
   it("deduplicates and caps the selection", () => {
-    expect(parseCompareSlugs({ k: "a,b,a,c,d,e" })).toEqual(["a", "b", "c", "d"]);
+    expect(parseCompareSlugs({ c: "a,b,a,c,d,e" })).toEqual(["a", "b", "c", "d"]);
     expect(parseCompareSlugs({})).toEqual([]);
   });
 });

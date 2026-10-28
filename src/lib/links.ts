@@ -32,7 +32,7 @@ export function detectLinkType(url: string): LinkType {
   return "other";
 }
 
-/** Short, readable form of a URL for lists, e.g. "example.frontify.com/…/herbst". */
+/** Short, readable form of a URL for lists, e.g. "example.frontify.com/…/autumn". */
 export function shortUrl(url: string): string {
   try {
     const u = new URL(url);
@@ -79,23 +79,23 @@ export const emptyLinkForm = (): LinkFormValues => ({ url: "", type: "", label: 
 
 export const linkFormSchema = z
   .object({
-    url: z.string().trim().min(1, "URL angeben").pipe(urlField),
+    url: z.string().trim().min(1, "Enter a URL").pipe(urlField),
     type: z.string().transform((v) => v || undefined),
-    label: optionalText.pipe(z.string().max(120, "Maximal 120 Zeichen").optional()),
+    label: optionalText.pipe(z.string().max(120, "Maximum 120 characters").optional()),
     thumbnailUrl: urlField,
     embed: z.boolean(),
   })
   .transform((v, ctx) => {
     const type = (v.type ?? detectLinkType(v.url ?? "")) as LinkType;
     if (!(LINK_TYPES as readonly string[]).includes(type)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["type"], message: "Unbekannter Link-Typ" });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["type"], message: "Unknown link type" });
     }
     const embed = v.embed && type === "looker_studio";
     if (embed && v.url && !toLookerEmbedUrl(v.url)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["embed"],
-        message: "Einbetten geht nur mit einem Report-Link (…/reporting/…)",
+        message: "Only report links (…/reporting/…) can be embedded",
       });
     }
     return { url: v.url!, type, label: v.label ?? null, thumbnailUrl: v.thumbnailUrl ?? null, embed };
