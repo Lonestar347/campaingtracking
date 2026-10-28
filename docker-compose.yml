@@ -1,0 +1,30 @@
+# Test deployment: app + Caddy (automatic HTTPS). Settings come from .env – see deploy/README.md.
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    environment:
+      BASIC_AUTH_USER: ${BASIC_AUTH_USER:-josera}
+      BASIC_AUTH_PASSWORD: ${BASIC_AUTH_PASSWORD:?Set BASIC_AUTH_PASSWORD in .env}
+      DEV_USER_EMAIL: ${DEV_USER_EMAIL:-anna.sample@example.com}
+      SEED_SAMPLE_DATA: ${SEED_SAMPLE_DATA:-true}
+    volumes:
+      - app-data:/data
+
+  caddy:
+    image: caddy:2.8
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?Set DOMAIN in .env}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    depends_on:
+      - app
+
+volumes:
+  app-data:
+  caddy-data:

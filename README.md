@@ -28,6 +28,11 @@ More commands:
 > **Upgrading from a German version of the app:** stored status values and labels were renamed
 > (e.g. `IDEE` → `IDEA`). Run `npm run db:reset` once to recreate the local database.
 
+## Deployment
+
+A Docker setup for a test server (HTTPS via Caddy, site-wide password via
+`BASIC_AUTH_PASSWORD`) is described in [deploy/README.md](deploy/README.md).
+
 ## Structure
 
 ```
