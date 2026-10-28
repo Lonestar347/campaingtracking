@@ -169,6 +169,8 @@ export const importMappingSchema = z.object({
   /** Wide layout: value columns, each with the KPI name it represents. */
   kpiColumns: z.array(z.object({ column: z.string(), kpiName: z.string().trim().min(1) })).default([]),
   channelColumn: z.string().optional(),
+  /** Column naming the creative (ad/visual) a row belongs to; unknown names become new creatives. */
+  creativeColumn: z.string().optional(),
   dateColumn: z.string().optional(),
   numberFormat: z.enum(["de", "en"]).default("de"),
   /** Cell value in the channel column -> channel name (stable across campaigns). */
@@ -183,7 +185,7 @@ export function mappingColumns(mapping: ImportMapping): string[] {
     mapping.layout === "long"
       ? [mapping.kpiColumn, mapping.valueColumn, mapping.unitColumn]
       : mapping.kpiColumns.map((k) => k.column);
-  return [...cols, mapping.channelColumn, mapping.dateColumn].filter((c): c is string => !!c);
+  return [...cols, mapping.channelColumn, mapping.creativeColumn, mapping.dateColumn].filter((c): c is string => !!c);
 }
 
 const HEADER_HINTS = {
@@ -191,6 +193,7 @@ const HEADER_HINTS = {
   /** Weaker date candidates, used only if no explicit date column exists. */
   period: /^(woche|week|kw|zeitraum|period|monat|month)\b/i,
   channel: /(kanal|channel|plattform|platform|medium|placement|netzwerk|network|quelle)/i,
+  creative: /(creative|motiv|werbemittel|ad name|anzeige)/i,
   kpi: /^(kpi|metrik|metric|kennzahl|kennzahlen|measure)\b/i,
   value: /^(wert|value|anzahl|ist|actual|result|ergebnis)\b/i,
   unit: /^(einheit|unit)\b/i,
@@ -214,9 +217,12 @@ export function suggestMapping(table: RawTable, knownKpis: readonly string[] = [
   const numberFormat = detectNumberFormat(table.rows.flat());
   const dateColumn = find(HEADER_HINTS.date) ?? find(HEADER_HINTS.period);
   const channelColumn = find(HEADER_HINTS.channel);
+  const creativeColumn = table.headers.find(
+    (h, i) => h !== channelColumn && HEADER_HINTS.creative.test(h.trim()) && !isMostlyNumeric(table, i, numberFormat),
+  );
   const kpiColumn = find(HEADER_HINTS.kpi);
   const valueColumn = find(HEADER_HINTS.value);
-  const base = { dateColumn, channelColumn, numberFormat, channelAliases: {}, kpiColumns: [] };
+  const base = { dateColumn, channelColumn, creativeColumn, numberFormat, channelAliases: {}, kpiColumns: [] };
 
   if (kpiColumn && valueColumn) {
     return { ...base, layout: "long", kpiColumn, valueColumn, unitColumn: find(HEADER_HINTS.unit) };
@@ -225,7 +231,7 @@ export function suggestMapping(table: RawTable, knownKpis: readonly string[] = [
   const known = new Map(knownKpis.map((k) => [normalizeName(k), k]));
   const kpiColumns = table.headers
     .map((header, index) => ({ header, index }))
-    .filter(({ header }) => header !== dateColumn && header !== channelColumn)
+    .filter(({ header }) => header !== dateColumn && header !== channelColumn && header !== creativeColumn)
     // Week/month numbers are numeric but not KPIs.
     .filter(({ header }) => !HEADER_HINTS.period.test(header.trim()))
     .filter(({ index }) => isMostlyNumeric(table, index, numberFormat))
@@ -259,9 +265,17 @@ export interface ImportChannel {
   typeName: string;
 }
 
+export interface ImportCreative {
+  id: string;
+  title: string;
+}
+
 export interface ImportedValue {
   rowNumber: number;
   channelId: string | null;
+  /** Existing creative, or null with `creativeName` set for a creative that will be created. */
+  creativeId: string | null;
+  creativeName: string | null;
   kpiName: string;
   value: number;
   unit: string | null;
@@ -281,9 +295,17 @@ export interface ImportResult {
   warnings: ImportIssue[];
   /** Channel cell values that matched no channel (for the alias dialog). */
   unknownChannels: string[];
+  /** Creative names that match no existing creative (created on import). */
+  newCreatives: string[];
   emptyCells: number;
   /** Range of all valid dates in the date column (also of rows with errors). */
   dateRange: { from: Date; to: Date } | null;
+}
+
+/** Finds a campaign creative by title (ignoring case, spaces and punctuation). */
+export function matchCreative(cell: string, creatives: readonly ImportCreative[]): ImportCreative | null {
+  const key = normalizeName(cell);
+  return key ? (creatives.find((c) => normalizeName(c.title) === key) ?? null) : null;
 }
 
 /** Resolves a channel cell value to a campaign channel: alias, then name or type name. */
@@ -308,7 +330,7 @@ const MAX_ISSUES = 50;
 export function applyMapping(
   table: RawTable,
   mapping: ImportMapping,
-  context: { channels: readonly ImportChannel[]; defaultChannelId?: string | null },
+  context: { channels: readonly ImportChannel[]; creatives?: readonly ImportCreative[]; defaultChannelId?: string | null },
 ): ImportResult {
   const errors: ImportIssue[] = [];
   const warnings: ImportIssue[] = [];
@@ -326,7 +348,7 @@ export function applyMapping(
   if (mapping.layout === "wide" && mapping.kpiColumns.length === 0) {
     addError({ message: "Please select at least one KPI column." });
   }
-  const empty: ImportResult = { values: [], errors, warnings, unknownChannels: [], emptyCells: 0, dateRange: null };
+  const empty: ImportResult = { values: [], errors, warnings, unknownChannels: [], newCreatives: [], emptyCells: 0, dateRange: null };
   if (errors.length > 0) return empty;
   if (table.rows.length === 0) {
     errors.push({ message: "The table contains no data rows." });
@@ -334,8 +356,11 @@ export function applyMapping(
   }
 
   const channelIdx = col(mapping.channelColumn);
+  const creativeIdx = col(mapping.creativeColumn);
   const dateIdx = col(mapping.dateColumn);
   const unknown = new Set<string>();
+  /** Normalised name -> first spelling of creatives that do not exist yet. */
+  const newCreatives = new Map<string, string>();
   const values: ImportedValue[] = [];
   /** Valid dates of all rows, also rows with other problems (to suggest the report period). */
   const seenDates: Date[] = [];
@@ -369,6 +394,22 @@ export function applyMapping(
       }
     }
 
+    let creativeId: string | null = null;
+    let creativeName: string | null = null;
+    if (creativeIdx >= 0) {
+      const cell = cellToString(row[creativeIdx]).trim();
+      if (cell) {
+        const creative = matchCreative(cell, context.creatives ?? []);
+        if (creative) {
+          creativeId = creative.id;
+        } else {
+          const key = normalizeName(cell);
+          if (!newCreatives.has(key)) newCreatives.set(key, cell);
+          creativeName = newCreatives.get(key)!;
+        }
+      }
+    }
+
     const cells =
       mapping.layout === "long"
         ? [
@@ -397,7 +438,7 @@ export function applyMapping(
         addError({ rowNumber, column: cell.column, message: `“${cellToString(cell.raw)}” is not a valid number.` });
         continue;
       }
-      values.push({ rowNumber, channelId, kpiName: cell.kpiName, value, unit: cell.unit, date });
+      values.push({ rowNumber, channelId, creativeId, creativeName, kpiName: cell.kpiName, value, unit: cell.unit, date });
     }
   });
 
@@ -426,7 +467,14 @@ export function applyMapping(
         }
       : null;
 
-  return { values, errors, warnings, unknownChannels, emptyCells, dateRange };
+  const created = [...newCreatives.values()].sort((a, b) => a.localeCompare(b, "en-GB"));
+  if (created.length > 0) {
+    warnings.push({
+      message: `${created.length} new creative(s) will be created: ${created.map((c) => `“${c}”`).join(", ")}.`,
+    });
+  }
+
+  return { values, errors, warnings, unknownChannels, newCreatives: created, emptyCells, dateRange };
 }
 
 /** Per channel and KPI: number of values and their sum (preview before import). */

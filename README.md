@@ -256,7 +256,26 @@ src/
 - Schema: `Comment.campaignId`, `ActivityLog.campaignId` – run `npm run db:push` after updating
   (or `npm run db:reset` for fresh sample data)
 
+### Creatives, timeline & dashboard refresh ✅
+
+- **Creatives** as a separate category per campaign (tab "Creatives"): finished ads/visuals with
+  image upload (PNG/JPG/WebP/GIF up to 5 MB, checked by content), optional channel, format, notes
+  and KPI values; sort by any KPI (cost KPIs such as CPC: lowest first)
+- KPI values per creative are entered manually or imported: the report import has a new "Creative
+  column"; known creatives are matched by name, unknown ones are created. Manual values replace
+  imported values of the same KPI
+- Campaign image: the creative marked "Use as campaign image", otherwise the first one with an image
+- **Timeline** (Gantt) below the mind map: campaign period, channels as bars (dashed when they have
+  no own dates), asset due dates as milestones (red = overdue), today marker, "Show assets" toggle;
+  clicking a row selects it in the mind map
+- **Dashboard** redesign: larger cards with campaign image, bigger type, fewer details per card,
+  advanced filters behind "More filters"; new "Top creatives" (best four by the selected KPI, only
+  of the filtered campaigns); "Critical" and "Recent activity" below
+- Seed: 9 creatives with generated placeholder visuals; sample report `creatives-report.csv`
+- Schema: new `Creative`, `KpiValue.creativeId` – run `npm run db:push` after updating (or
+  `npm run db:reset` for fresh sample data). With Docker the schema is updated on start.
+
 ### Next
 
-Later (phase 8): Microsoft SSO (Auth.js + Entra ID), server deployment with PostgreSQL, timeline/Gantt
+Later (phase 8): Microsoft SSO (Auth.js + Entra ID), PostgreSQL on the server, timeline/Gantt
 across campaigns, PDF export of the charter, API integrations (Frontify, SharePoint/Graph, Looker).

@@ -57,6 +57,7 @@ async function campaignContext(campaignId: string) {
       id: true,
       slug: true,
       channels: { select: { id: true, name: true, kpiTargets: true, channelType: { select: { name: true } } } },
+      creatives: { select: { id: true, title: true } },
     },
   });
 }
@@ -84,7 +85,7 @@ export async function analyzeUpload(campaignId: string, formData: FormData): Pro
       const table = extractTable(sheet.rows);
       const match = findMatchingMapping(table.headers, saved);
       const suggestion = { ...(match?.mapping ?? suggestMapping(table, knownKpis)), sheetName: sheet.name };
-      const trial = applyMapping(table, suggestion, { channels });
+      const trial = applyMapping(table, suggestion, { channels, creatives: campaign.creatives });
       return {
         name: sheet.name,
         headers: table.headers,
@@ -128,7 +129,17 @@ export interface ImportSummaryRow {
 }
 
 export type RunImportResult =
-  | { ok: true; dryRun: boolean; valueCount: number; summary: ImportSummaryRow[]; warnings: ImportIssue[]; reportId?: string }
+  | {
+      ok: true;
+      dryRun: boolean;
+      valueCount: number;
+      summary: ImportSummaryRow[];
+      warnings: ImportIssue[];
+      /** Values assigned to a creative, and creatives created (or to be created) by the import. */
+      creativeValueCount: number;
+      newCreatives: string[];
+      reportId?: string;
+    }
   | {
       ok: false;
       errors: ImportIssue[];
@@ -177,7 +188,7 @@ export async function runImport(input: RunImportInput): Promise<RunImportResult>
   }
 
   const channels = campaign.channels.map((c) => ({ id: c.id, name: c.name, typeName: c.channelType.name }));
-  const result = applyMapping(table, mapping.data, { channels, defaultChannelId });
+  const result = applyMapping(table, mapping.data, { channels, creatives: campaign.creatives, defaultChannelId });
   // Report form and file problems together, so everything can be fixed in one go.
   if (hasFieldErrors || result.errors.length > 0) {
     return {
@@ -213,7 +224,11 @@ export async function runImport(input: RunImportInput): Promise<RunImportResult>
     sum: s.sum,
   }));
 
-  if (input.dryRun) return { ok: true, dryRun: true, valueCount: result.values.length, summary, warnings };
+  const creativeInfo = {
+    creativeValueCount: result.values.filter((v) => v.creativeId || v.creativeName).length,
+    newCreatives: result.newCreatives,
+  };
+  if (input.dryRun) return { ok: true, dryRun: true, valueCount: result.values.length, summary, warnings, ...creativeInfo };
 
   const reportId = await db.$transaction(async (tx) => {
     const report = await tx.kpiReport.create({
@@ -228,10 +243,37 @@ export async function runImport(input: RunImportInput): Promise<RunImportResult>
         uploadedById: auth.user.id,
       },
     });
+    // New creatives named in the report; the channel of their first row becomes their channel.
+    const createdIds = new Map<string, string>();
+    const lastCreative = await tx.creative.findFirst({ where: { campaignId: campaign.id }, orderBy: { sortOrder: "desc" } });
+    for (const [index, title] of result.newCreatives.entries()) {
+      const firstRow = result.values.find((v) => v.creativeName === title);
+      const creative = await tx.creative.create({
+        data: {
+          campaignId: campaign.id,
+          channelId: firstRow?.channelId ?? null,
+          title,
+          kpiValues: {},
+          sortOrder: (lastCreative?.sortOrder ?? -1) + 1 + index,
+        },
+      });
+      createdIds.set(title, creative.id);
+      await tx.activityLog.create({
+        data: {
+          campaignId: campaign.id,
+          entityType: "creative",
+          entityId: creative.id,
+          action: "created",
+          details: { title, via: "import", fileName: input.fileName },
+          userId: auth.user.id,
+        },
+      });
+    }
     await tx.kpiValue.createMany({
       data: result.values.map((v) => ({
         reportId: report.id,
         channelId: v.channelId,
+        creativeId: v.creativeId ?? (v.creativeName ? (createdIds.get(v.creativeName) ?? null) : null),
         kpiName: v.kpiName,
         value: v.value,
         unit: v.unit,
@@ -256,7 +298,7 @@ export async function runImport(input: RunImportInput): Promise<RunImportResult>
   });
 
   revalidatePath(`/campaigns/${campaign.slug}`, "layout");
-  return { ok: true, dryRun: false, valueCount: result.values.length, summary, warnings, reportId };
+  return { ok: true, dryRun: false, valueCount: result.values.length, summary, warnings, ...creativeInfo, reportId };
 }
 
 export async function deleteReport(reportId: string): Promise<{ ok: boolean; error?: string }> {

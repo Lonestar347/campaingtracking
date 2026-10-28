@@ -33,7 +33,7 @@ export default async function PerformancePage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ imported?: string }>;
+  searchParams: Promise<{ imported?: string; creatives?: string }>;
 }) {
   const [{ slug }, query] = await Promise.all([params, searchParams]);
   const [campaign, user] = await Promise.all([getCampaignBySlug(slug), getCurrentUser()]);
@@ -74,12 +74,23 @@ export default async function PerformancePage({
   ].filter(({ link }) => link.type === "looker_studio");
 
   const imported = Number(query.imported);
+  const creativeValues = Number(query.creatives);
 
   return (
     <div className="space-y-10">
       {imported > 0 && (
         <p className="flex items-center gap-2 rounded-lg border border-status-green bg-status-green/10 px-4 py-2.5 text-sm" role="status">
           <CheckCircle2 className="size-4 text-status-green" /> {formatNumber(imported)} values imported.
+          {creativeValues > 0 && (
+            <>
+              {" "}
+              {formatNumber(creativeValues)} of them belong to creatives –{" "}
+              <Link href={`/campaigns/${slug}/creatives`} className="font-medium underline underline-offset-2">
+                view creatives
+              </Link>
+              .
+            </>
+          )}
         </p>
       )}
 

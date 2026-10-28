@@ -63,6 +63,7 @@ model Campaign {
   kpiReports KpiReport[]
   comments   Comment[]
   activities ActivityLog[]
+  creatives  Creative[]
 
   @@index([ownerId])
 }
@@ -132,6 +133,7 @@ model Channel {
   links       Link[]
   kpiReports  KpiReport[]
   kpiValues   KpiValue[]
+  creatives   Creative[]
 
   @@index([campaignId, funnelStage])
 }
@@ -211,20 +213,48 @@ model KpiValue {
   id        String    @id @default(cuid())
   reportId  String
   channelId String?
+  creativeId String?
   kpiName   String
   value     Float
   unit      String?
   date      DateTime?
 
-  report  KpiReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
-  channel Channel?  @relation(fields: [channelId], references: [id], onDelete: SetNull)
+  report   KpiReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  channel  Channel?  @relation(fields: [channelId], references: [id], onDelete: SetNull)
+  creative Creative? @relation(fields: [creativeId], references: [id], onDelete: SetNull)
 
   @@index([reportId])
   @@index([channelId, kpiName])
+  @@index([creativeId])
 }
 
 /// Column mapping for recurring reports of one source, so uploads can be
 /// recognised automatically.
+// Creative: a finished ad/visual of a campaign with an image and its own KPI
+// values (entered manually or imported). Separate from the funnel hierarchy;
+// the channel is optional context.
+model Creative {
+  id         String   @id @default(cuid())
+  campaignId String
+  channelId  String?
+  title      String
+  format     String? // e.g. "1080x1080", "9:16 video"
+  notes      String?
+  imageKey   String? // storage key of the uploaded image
+  imageType  String? // MIME type of the image
+  isCover    Boolean  @default(false) // shown as campaign image on the dashboard
+  kpiValues  Json // manual KPI values: Record<kpiName, value>
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  campaign       Campaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  channel        Channel?   @relation(fields: [channelId], references: [id], onDelete: SetNull)
+  importedValues KpiValue[]
+
+  @@index([campaignId])
+}
+
 model KpiImportMapping {
   id        String   @id @default(cuid())
   source    String   @unique

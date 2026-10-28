@@ -44,7 +44,7 @@ export interface ActivityContext {
 
 /** Object an entry refers to, for linking into the mind map. */
 export interface ActivityTarget {
-  kind: "campaign" | "channel" | "asset";
+  kind: "campaign" | "channel" | "asset" | "creative";
   id: string;
 }
 
@@ -77,14 +77,17 @@ const FIELD_LABELS: Record<string, string> = {
   startDate: "start",
   endDate: "end",
   kpiTargets: "KPI targets",
+  channelId: "channel",
+  kpiValues: "KPI values",
 };
 
 /** Fields whose values are not shown in the summary (long or structured). */
-const VALUELESS_FIELDS = new Set(["notes", "kpiTargets"]);
+const VALUELESS_FIELDS = new Set(["notes", "kpiTargets", "kpiValues"]);
 
 function formatValue(field: string, value: unknown, ctx: ActivityContext): string {
   if (value == null || value === "") return "none";
   if (field === "ownerId" || field === "approverId") return ctx.users.get(String(value)) ?? "unknown person";
+  if (field === "channelId") return ctx.channels.get(String(value)) ?? "a deleted channel";
   if (field === "status") return ASSET_STATUS_LABELS[value as AssetStatus] ?? String(value);
   if (field === "assetType") return ASSET_TYPE_LABELS[value as AssetType] ?? String(value);
   if (field === "funnelStage") return FUNNEL_STAGE_LABELS[value as FunnelStage] ?? String(value);
@@ -127,15 +130,21 @@ export function describeActivity(entry: ActivityEntry, ctx: ActivityContext): De
   const target: ActivityTarget | null =
     entityType === "campaign" || entityType === "charter"
       ? { kind: "campaign", id: entityId }
-      : exists
-        ? { kind: entityType as "asset" | "channel", id: entityId }
-        : null;
+      : entityType === "creative"
+        ? action === "deleted"
+          ? null
+          : { kind: "creative", id: entityId }
+        : exists
+          ? { kind: entityType as "asset" | "channel", id: entityId }
+          : null;
   const objectName =
     entityType === "asset"
       ? quote(assetName, "an asset")
       : entityType === "channel"
         ? quote(channelName, "a channel")
-        : "the campaign";
+        : entityType === "creative"
+          ? quote(str(d.title), "a creative")
+          : "the campaign";
 
   const result = (text: string, note?: string): DescribedActivity => ({ actor, text, target, note });
 
@@ -188,6 +197,18 @@ export function describeActivity(entry: ActivityEntry, ctx: ActivityContext): De
       return result(`updated asset ${objectName}: ${describeChanges(d.changes, ctx)}`);
     case "asset:deleted":
       return result(`deleted asset ${objectName}`);
+    case "creative:created":
+      return result(`added creative ${objectName}`);
+    case "creative:updated":
+      return result(`updated creative ${objectName}: ${describeChanges(d.changes, ctx)}`);
+    case "creative:image_uploaded":
+      return result(`uploaded a new image for ${objectName}`);
+    case "creative:image_removed":
+      return result(`removed the image of ${objectName}`);
+    case "creative:cover_set":
+      return result(`made ${objectName} the campaign image`);
+    case "creative:deleted":
+      return result(`deleted creative ${objectName}`);
     case "kpi_report:imported": {
       const values = typeof d.values === "number" ? ` (${plural(d.values, "value")})` : "";
       return result(`imported report ${quote(str(d.fileName), "a report")}${str(d.source) ? ` from ${d.source}` : ""}${values}`);

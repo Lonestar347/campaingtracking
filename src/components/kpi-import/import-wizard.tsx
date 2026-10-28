@@ -138,7 +138,12 @@ function MappingStep({
     setResult(null);
   };
   const updateMapping = (patch: Partial<ImportMapping>) => {
-    setMapping((m) => ({ ...m, ...patch }));
+    setMapping((m) => {
+      const next = { ...m, ...patch };
+      // A column used as date, channel or creative cannot also be a KPI column.
+      const taken = new Set([next.dateColumn, next.channelColumn, next.creativeColumn]);
+      return { ...next, kpiColumns: next.kpiColumns.filter((k) => !taken.has(k.column)) };
+    });
     setResult(null);
   };
 
@@ -181,7 +186,7 @@ function MappingStep({
         });
         setResult(response);
         if (response.ok && !response.dryRun) {
-          router.push(`/campaigns/${slug}/performance?imported=${response.valueCount}`);
+          router.push(`/campaigns/${slug}/performance?imported=${response.valueCount}&creatives=${response.creativeValueCount}`);
           router.refresh();
         }
       } catch {
@@ -190,7 +195,9 @@ function MappingStep({
     });
 
   const fieldErrors = result && !result.ok ? (result.fieldErrors ?? {}) : {};
-  const otherHeaders = sheet.headers.filter((h) => h !== mapping.dateColumn && h !== mapping.channelColumn);
+  const otherHeaders = sheet.headers.filter(
+    (h) => h !== mapping.dateColumn && h !== mapping.channelColumn && h !== mapping.creativeColumn,
+  );
   const roles = columnRoles(mapping);
   const canImport = result?.ok === true && result.dryRun;
 
@@ -270,6 +277,7 @@ function MappingStep({
           <div className="space-y-3 border-t pt-4">
             {columnSelect("imp-date", "Date column", mapping.dateColumn, (v) => updateMapping({ dateColumn: v }))}
             {columnSelect("imp-channel", "Channel column", mapping.channelColumn, (v) => updateMapping({ channelColumn: v }))}
+            {columnSelect("imp-creative", "Creative column", mapping.creativeColumn, (v) => updateMapping({ creativeColumn: v }))}
             <Field
               label={mapping.channelColumn ? "Channel for rows without a channel" : "Channel for all values"}
               htmlFor="imp-default-channel"
@@ -466,6 +474,7 @@ function columnRoles(mapping: ImportMapping): Record<string, string> {
   const roles: Record<string, string> = {};
   if (mapping.dateColumn) roles[mapping.dateColumn] = "Date";
   if (mapping.channelColumn) roles[mapping.channelColumn] = "Channel";
+  if (mapping.creativeColumn) roles[mapping.creativeColumn] = "Creative";
   if (mapping.layout === "long") {
     if (mapping.kpiColumn) roles[mapping.kpiColumn] = "KPI";
     if (mapping.valueColumn) roles[mapping.valueColumn] = "Value";
@@ -551,6 +560,11 @@ function ResultPanel({
       <h3 className="flex items-center gap-2 font-semibold">
         <CheckCircle2 className="size-4 text-status-green" /> {result.valueCount} values ready to import
       </h3>
+      {result.creativeValueCount > 0 && (
+        <p className="text-sm text-muted-foreground">
+          {result.creativeValueCount} of them belong to a creative and appear in the Creatives tab.
+        </p>
+      )}
       {result.warnings.length > 0 && <IssueList issues={result.warnings} tone="warning" />}
       <div className="overflow-x-auto">
         <table className="w-full text-sm">

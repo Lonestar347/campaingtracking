@@ -11,6 +11,8 @@ import { PrismaClient } from "@prisma/client";
 import { DEFAULT_CHANNEL_TYPES } from "../src/lib/domain/channel-types";
 import type { AssetStatus, AssetType, FunnelStage } from "../src/lib/domain/enums";
 import { launchCharterDataSchema, type LaunchCharterData } from "../src/lib/validation";
+import { storage } from "../src/lib/storage";
+import { renderVisual, type VisualSpec } from "./seed-images";
 
 const db = new PrismaClient();
 
@@ -286,13 +288,105 @@ const CAMPAIGNS: CampaignSeed[] = [
   },
 ];
 
+interface CreativeSeed {
+  title: string;
+  channel?: string; // channel name within the campaign
+  format: string;
+  visual?: VisualSpec;
+  cover?: boolean;
+  kpis: Record<string, number>;
+}
+
+// Fictional creatives with generated placeholder visuals and manual KPI values.
+const CREATIVES: Record<string, CreativeSeed[]> = {
+  "autumn-campaign-dog": [
+    {
+      title: "Golden paw – hero visual",
+      channel: "Social Reach (Paid)",
+      format: "1080×1080",
+      visual: { from: "#7a4b2a", to: "#d9a066", accent: "#FECC00", motif: "paw" },
+      cover: true,
+      kpis: { Impressions: 1_240_000, Clicks: 21_800, "CTR %": 1.76, CPC: 0.41 },
+    },
+    {
+      title: "Coat shine pack shot",
+      channel: "Social Reach (Paid)",
+      format: "1080×1350",
+      visual: { from: "#3d2b1f", to: "#a5714a", accent: "#E2001A", motif: "pack" },
+      kpis: { Impressions: 980_000, Clicks: 11_300, "CTR %": 1.15, CPC: 0.63 },
+    },
+    {
+      title: "Autumn bowl – story",
+      channel: "Social Reach (Paid)",
+      format: "9:16",
+      visual: { from: "#5c3b1e", to: "#e0b27a", accent: "#f4e3c1", motif: "bowl" },
+      kpis: { Impressions: 1_560_000, Clicks: 30_100, "CTR %": 1.93, CPC: 0.36 },
+    },
+    {
+      title: "CTV end card",
+      channel: "CTV spot",
+      format: "16:9",
+      visual: { from: "#22223b", to: "#4a4e69", accent: "#FECC00", motif: "pack" },
+      kpis: { Impressions: 2_100_000, "Completion rate %": 74 },
+    },
+    {
+      title: "POS shelf wobbler",
+      channel: "POS/Retail",
+      format: "A6",
+      visual: { from: "#8d5524", to: "#f3c08b", accent: "#ffffff", motif: "paw" },
+      kpis: {},
+    },
+  ],
+  "winter-sampling-cat": [
+    {
+      title: "Sampling box – key visual",
+      channel: "Sampling",
+      format: "1200×628",
+      visual: { from: "#1d3557", to: "#6c8ebf", accent: "#f1faee", motif: "pack" },
+      cover: true,
+      kpis: {},
+    },
+    {
+      title: "Winter newsletter header",
+      channel: "Newsletter/CRM",
+      format: "600×300",
+      visual: { from: "#264653", to: "#8ab17d", accent: "#FECC00", motif: "bowl" },
+      kpis: { "Open rate %": 38.2, Clicks: 1_240, "CTR %": 2.4 },
+    },
+    {
+      title: "Cat paw teaser",
+      channel: "Influencer",
+      format: "9:16",
+      visual: { from: "#3c1642", to: "#a06cd5", accent: "#ffd6ff", motif: "paw" },
+      kpis: { Impressions: 410_000, Clicks: 5_900, "CTR %": 1.44 },
+    },
+  ],
+  "spring-shop-promotion": [
+    {
+      title: "Spring voucher banner",
+      channel: "Promotions",
+      format: "970×250",
+      visual: { from: "#2a6f4e", to: "#8fc79a", accent: "#f4e3c1", motif: "bowl" },
+      kpis: {},
+    },
+  ],
+};
+
+const slugifyTitle = (title: string) => title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
 async function main() {
+  // Uploaded creative images of the previous seed run.
+  for (const c of await db.creative.findMany({ where: { imageKey: { not: null } }, select: { imageKey: true } })) {
+    await storage.delete(c.imageKey!).catch(() => undefined);
+  }
+
   // Wipe in dependency order.
   await db.activityLog.deleteMany();
   await db.comment.deleteMany();
   await db.kpiValue.deleteMany();
   await db.kpiReport.deleteMany();
   await db.kpiImportMapping.deleteMany();
+  await db.creative.deleteMany();
   await db.link.deleteMany();
   await db.asset.deleteMany();
   await db.channel.deleteMany();
@@ -406,6 +500,30 @@ async function main() {
     }
   }
 
+  for (const [slug, creatives] of Object.entries(CREATIVES)) {
+    const campaign = await db.campaign.findUniqueOrThrow({ where: { slug }, include: { channels: true } });
+    for (const [index, c] of creatives.entries()) {
+      const channel = c.channel ? campaign.channels.find((ch) => ch.name === c.channel) : undefined;
+      if (c.channel && !channel) throw new Error(`Unknown channel for creative: ${c.channel}`);
+      const imageKey = c.visual
+        ? await storage.put(renderVisual(c.visual), `${slugifyTitle(c.title)}.png`, `creatives/${campaign.id}`)
+        : null;
+      await db.creative.create({
+        data: {
+          campaignId: campaign.id,
+          channelId: channel?.id ?? null,
+          title: c.title,
+          format: c.format,
+          imageKey,
+          imageType: imageKey ? "image/png" : null,
+          isCover: c.cover ?? false,
+          kpiValues: c.kpis,
+          sortOrder: index,
+        },
+      });
+    }
+  }
+
   // Comments and status changes so the team features have data.
   const hoursAgo = (h: number) => new Date(Date.now() - h * 3_600_000);
   const findAsset = (title: string) =>
@@ -501,6 +619,7 @@ async function main() {
     campaigns: await db.campaign.count(),
     channels: await db.channel.count(),
     assets: await db.asset.count(),
+    creatives: await db.creative.count(),
   };
   console.log("Seed complete:", counts);
 }

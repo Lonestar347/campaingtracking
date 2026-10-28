@@ -154,6 +154,8 @@ describe("applyMapping", () => {
     expect(result.values[0]).toEqual({
       rowNumber: 2,
       channelId: "c-social",
+      creativeId: null,
+      creativeName: null,
       kpiName: "Impressions",
       value: 1000,
       unit: null,
@@ -270,5 +272,42 @@ describe("computeActuals", () => {
     expect(aggregationFor("Umsatz")).toBe("sum");
     expect(lowerIsBetter("CPC")).toBe(true);
     expect(lowerIsBetter("ROAS")).toBe(false);
+  });
+});
+
+describe("creative column", () => {
+  const table = extractTable([
+    ["Date", "Channel", "Creative", "Impressions", "Clicks"],
+    ["2026-11-02", "Social Reach (Paid)", "Golden paw – hero visual", "1000", "20"],
+    ["2026-11-02", "Social Reach (Paid)", "golden paw - HERO visual", "500", "5"],
+    ["2026-11-02", "Social Reach (Paid)", "New carousel", "300", "3"],
+    ["2026-11-02", "Social Reach (Paid)", "", "100", "1"],
+  ]);
+  const creatives = [{ id: "cr1", title: "Golden paw – hero visual" }];
+
+  it("is suggested from the header and kept out of the KPI columns", () => {
+    const mapping = suggestMapping(table);
+    expect(mapping.creativeColumn).toBe("Creative");
+    expect(mapping.kpiColumns.map((k) => k.column)).toEqual(["Impressions", "Clicks"]);
+  });
+
+  it("does not take numeric columns as creative column", () => {
+    const numeric = extractTable([
+      ["Channel", "Ad impressions"],
+      ["Social Reach (Paid)", "1000"],
+    ]);
+    expect(suggestMapping(numeric).creativeColumn).toBeUndefined();
+  });
+
+  it("matches existing creatives loosely and collects new ones", () => {
+    const result = applyMapping(table, suggestMapping(table), { channels, creatives });
+    expect(result.errors).toEqual([]);
+    expect(result.newCreatives).toEqual(["New carousel"]);
+    const byRow = (row: number) => result.values.filter((v) => v.rowNumber === row);
+    expect(byRow(2).every((v) => v.creativeId === "cr1" && v.creativeName === null)).toBe(true);
+    expect(byRow(3).every((v) => v.creativeId === "cr1")).toBe(true);
+    expect(byRow(4).every((v) => v.creativeId === null && v.creativeName === "New carousel")).toBe(true);
+    expect(byRow(5).every((v) => v.creativeId === null && v.creativeName === null)).toBe(true);
+    expect(result.warnings.some((w) => w.message.includes("1 new creative(s) will be created"))).toBe(true);
   });
 });

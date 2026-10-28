@@ -11,11 +11,12 @@ export function CampaignTabs({ slug }: { slug: string }) {
     { href: base, label: "Mind map", active: pathname === base },
     { href: `${base}/funnel`, label: "Funnel", active: pathname === `${base}/funnel` },
     { href: `${base}/charter`, label: "Launch charter", active: pathname.startsWith(`${base}/charter`) },
+    { href: `${base}/creatives`, label: "Creatives", active: pathname === `${base}/creatives` },
     { href: `${base}/performance`, label: "Performance", active: pathname.startsWith(`${base}/performance`) },
     { href: `${base}/activity`, label: "Activity", active: pathname === `${base}/activity` },
   ];
   return (
-    <nav className="flex gap-1 border-b print:hidden" aria-label="Campaign views">
+    <nav className="flex gap-1 overflow-x-auto border-b print:hidden" aria-label="Campaign views">
       {tabs.map((tab) => (
         <Link
           key={tab.href}

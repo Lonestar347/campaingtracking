@@ -135,3 +135,28 @@ export async function getUsersWithCounts() {
     include: { _count: { select: { ownedCampaigns: true, ownedChannels: true, ownedAssets: true, comments: true } } },
   });
 }
+
+/** Creatives of a campaign with their channel and imported KPI values. */
+export async function getCampaignCreatives(campaignId: string) {
+  return db.creative.findMany({
+    where: { campaignId },
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    include: {
+      channel: { select: { id: true, name: true } },
+      importedValues: { select: { kpiName: true, value: true } },
+    },
+  });
+}
+
+export type CampaignCreative = Awaited<ReturnType<typeof getCampaignCreatives>>[number];
+
+/** Creatives of all campaigns (dashboard: campaign images and top creatives). */
+export async function getAllCreatives() {
+  return db.creative.findMany({
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    include: {
+      channel: { select: { name: true } },
+      importedValues: { select: { kpiName: true, value: true } },
+    },
+  });
+}

@@ -6,6 +6,7 @@ export const KPI_SUGGESTIONS = [
   "Clicks",
   "CTR %",
   "CPM",
+  "CPC",
   "Engagement rate %",
   "Followers",
   "Sessions",

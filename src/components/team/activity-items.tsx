@@ -16,6 +16,7 @@ import { Avatar } from "@/components/team/avatar";
 export function targetHref(slug: string, target: ActivityTarget | null): string | null {
   if (!target) return null;
   if (target.kind === "campaign") return `/campaigns/${slug}`;
+  if (target.kind === "creative") return `/campaigns/${slug}/creatives?creative=${target.id}`;
   return `/campaigns/${slug}?${target.kind}=${target.id}`;
 }
 

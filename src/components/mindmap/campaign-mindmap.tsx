@@ -29,6 +29,7 @@ import type { CampaignDetail, CharterFormOptions } from "@/lib/queries";
 import { KpiDatalist } from "@/components/kpi-datalist";
 import { MindmapActionsContext, nodeTypes } from "@/components/mindmap/nodes";
 import { DetailPanel, type Selection, type TeamData } from "@/components/mindmap/detail-panel";
+import { CampaignGantt } from "@/components/mindmap/campaign-gantt";
 
 interface Props {
   campaign: CampaignDetail;
@@ -109,6 +110,7 @@ function MindmapCanvas({ campaign, options, canEdit, initialSelection = null, te
   const [selection, setSelection] = React.useState<Selection | null>(initialSelection);
   const [now, setNow] = React.useState<Date | null>(null);
   const focusAfterLayout = React.useRef<string | null>(null);
+  const mapRef = React.useRef<HTMLDivElement>(null);
 
   // Client-only state: stored collapse state and "now" (avoids hydration mismatches).
   React.useEffect(() => {
@@ -228,7 +230,9 @@ function MindmapCanvas({ campaign, options, canEdit, initialSelection = null, te
 
   const expandAll = () => updateCollapsed(() => new Set());
   const collapseAssets = () =>
-    updateCollapsed(() => new Set(campaign.channels.filter((c) => c.assets.length > 0).map((c) => channelNodeId(c.id))));
+    updateCollapsed(
+      () => new Set(campaign.channels.filter((c) => c.assets.length > 0).map((c) => channelNodeId(c.id))),
+    );
 
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -241,57 +245,74 @@ function MindmapCanvas({ campaign, options, canEdit, initialSelection = null, te
   return (
     <MindmapActionsContext.Provider value={actions}>
       <KpiDatalist />
-      <div className="relative flex h-[calc(100vh-15rem)] min-h-[560px] overflow-hidden rounded-xl border bg-background">
-        <div className="relative min-w-0 flex-1">
-          <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            nodeTypes={nodeTypes}
-            onNodeClick={onNodeClick}
-            onPaneClick={() => setSelection(null)}
-            nodesDraggable={false}
-            nodesConnectable={false}
-            edgesFocusable={false}
-            fitView
-            fitViewOptions={{ padding: 0.15, maxZoom: 1 }}
-            minZoom={0.2}
-            maxZoom={1.75}
-            colorMode="system"
-            proOptions={{ hideAttribution: true }}
-            className="mindmap"
-          >
-            <Background gap={24} size={1} />
-            <Controls showInteractive={false} position="bottom-right" />
-            <Panel position="top-left" className="flex flex-wrap gap-1.5">
-              <Button size="sm" variant="outline" className="bg-card" onClick={expandAll}>
-                <ChevronsUpDown /> Expand all
-              </Button>
-              <Button size="sm" variant="outline" className="bg-card" onClick={collapseAssets}>
-                <ChevronsDownUp /> Collapse assets
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="bg-card"
-                onClick={() => fitView({ padding: 0.15, duration: 300, maxZoom: 1 })}
-              >
-                <Maximize /> Fit view
-              </Button>
-            </Panel>
-            <Panel position="bottom-left">
-              <Legend />
-            </Panel>
-          </ReactFlow>
+      <div className="space-y-6">
+        <div
+          ref={mapRef}
+          className="relative flex h-[calc(100vh-15rem)] min-h-[560px] scroll-mt-4 overflow-hidden rounded-xl border bg-background"
+        >
+          <div className="relative min-w-0 flex-1">
+            <ReactFlow
+              nodes={nodes}
+              edges={edges}
+              nodeTypes={nodeTypes}
+              onNodeClick={onNodeClick}
+              onPaneClick={() => setSelection(null)}
+              nodesDraggable={false}
+              nodesConnectable={false}
+              edgesFocusable={false}
+              fitView
+              fitViewOptions={{ padding: 0.15, maxZoom: 1 }}
+              minZoom={0.2}
+              maxZoom={1.75}
+              colorMode="system"
+              proOptions={{ hideAttribution: true }}
+              className="mindmap"
+            >
+              <Background gap={24} size={1} />
+              <Controls showInteractive={false} position="bottom-right" />
+              <Panel position="top-left" className="flex flex-wrap gap-1.5">
+                <Button size="sm" variant="outline" className="bg-card" onClick={expandAll}>
+                  <ChevronsUpDown /> Expand all
+                </Button>
+                <Button size="sm" variant="outline" className="bg-card" onClick={collapseAssets}>
+                  <ChevronsDownUp /> Collapse assets
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="bg-card"
+                  onClick={() => fitView({ padding: 0.15, duration: 300, maxZoom: 1 })}
+                >
+                  <Maximize /> Fit view
+                </Button>
+              </Panel>
+              <Panel position="bottom-left">
+                <Legend />
+              </Panel>
+            </ReactFlow>
+          </div>
+
+          {selection && (
+            <DetailPanel
+              campaign={campaign}
+              options={options}
+              canEdit={canEdit}
+              selection={selection}
+              onSelect={select}
+              team={team}
+            />
+          )}
         </div>
 
-        {selection && (
-          <DetailPanel
+        {now && (
+          <CampaignGantt
             campaign={campaign}
-            options={options}
-            canEdit={canEdit}
+            now={now}
             selection={selection}
-            onSelect={select}
-            team={team}
+            onSelect={(next) => {
+              select(next);
+              mapRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
           />
         )}
       </div>

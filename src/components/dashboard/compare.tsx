@@ -59,7 +59,7 @@ export function CompareToggle({ slug, name }: CompareItem) {
   return (
     <label
       className={cn(
-        "relative z-10 inline-flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground",
+        "relative z-10 inline-flex cursor-pointer items-center gap-2 text-sm text-muted-foreground hover:text-foreground",
         full && "cursor-not-allowed opacity-50",
       )}
       title={full ? `Compare up to ${MAX_COMPARE} campaigns` : undefined}

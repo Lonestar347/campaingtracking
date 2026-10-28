@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { Loader2, Search, X } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { ChevronDown, Loader2, Search, SlidersHorizontal, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -18,12 +18,7 @@ import {
   type ExecutionType,
 } from "@/lib/domain/enums";
 import { parseDateInput, toDateInput } from "@/lib/format";
-import {
-  countActiveFilters,
-  filtersToSearchParams,
-  type DashboardFilters,
-  type DashboardSort,
-} from "@/lib/dashboard";
+import { countActiveFilters, filtersToSearchParams, type DashboardFilters, type DashboardSort } from "@/lib/dashboard";
 
 /** Filters arrive serialised from the server; dates come back as ISO strings. */
 interface Props {
@@ -45,15 +40,7 @@ function toggle<T>(list: T[], value: T): T[] {
   return list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
 }
 
-function Chip({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
+function Chip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
     <button
       type="button"
@@ -81,15 +68,32 @@ function ChipGroup({ label, children }: { label: string; children: React.ReactNo
 export function FilterBar({ filters, sort, options }: Props) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [pending, startTransition] = React.useTransition();
   const [query, setQuery] = React.useState(filters.q ?? "");
+  const advancedActive =
+    !!filters.brand ||
+    !!filters.productLine ||
+    !!filters.ownerId ||
+    filters.executionTypes.length > 0 ||
+    !!filters.from ||
+    !!filters.to;
+  const [showMore, setShowMore] = React.useState(advancedActive);
+  // The KPI chosen for "Top creatives" is not a filter but stays in the URL.
+  const kpi = searchParams.get("kpi");
 
-  const apply = React.useCallback(
-    (next: Partial<DashboardFilters>, nextSort: DashboardSort = sort) => {
-      const params = filtersToSearchParams({ ...filters, ...next }, nextSort).toString();
-      startTransition(() => router.replace(params ? `${pathname}?${params}` : pathname, { scroll: false }));
+  const navigate = React.useCallback(
+    (params: URLSearchParams) => {
+      if (kpi) params.set("kpi", kpi);
+      const qs = params.toString();
+      startTransition(() => router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false }));
     },
-    [filters, sort, pathname, router],
+    [pathname, router, kpi],
+  );
+  const apply = React.useCallback(
+    (next: Partial<DashboardFilters>, nextSort: DashboardSort = sort) =>
+      navigate(filtersToSearchParams({ ...filters, ...next }, nextSort)),
+    [filters, sort, navigate],
   );
 
   // Debounced free-text search.
@@ -103,7 +107,7 @@ export function FilterBar({ filters, sort, options }: Props) {
   const dateValue = (d?: Date | string) => (d ? toDateInput(new Date(d)) : "");
 
   return (
-    <section aria-label="Filter" className="space-y-3 rounded-xl border bg-card p-4">
+    <section aria-label="Filter" className="space-y-4 rounded-xl border bg-card p-4">
       <div className="flex flex-wrap items-end gap-3">
         <div className="relative min-w-56 flex-1">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -113,7 +117,7 @@ export function FilterBar({ filters, sort, options }: Props) {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search campaign, brand or product line"
             aria-label="Search"
-            className="pl-8"
+            className="h-10 pl-8 text-base"
           />
         </div>
         <div className="flex items-center gap-2">
@@ -124,7 +128,7 @@ export function FilterBar({ filters, sort, options }: Props) {
             id="sort"
             value={sort}
             onChange={(e) => apply({}, e.target.value as DashboardSort)}
-            className="w-40"
+            className="h-10 w-40"
           >
             {(Object.keys(SORT_LABELS) as DashboardSort[]).map((s) => (
               <option key={s} value={s}>
@@ -133,6 +137,16 @@ export function FilterBar({ filters, sort, options }: Props) {
             ))}
           </Select>
         </div>
+        <Button
+          variant="outline"
+          className="h-10"
+          aria-expanded={showMore}
+          aria-controls="more-filters"
+          onClick={() => setShowMore((v) => !v)}
+        >
+          <SlidersHorizontal /> More filters
+          <ChevronDown className={cn("transition-transform", showMore && "rotate-180")} />
+        </Button>
         {pending && <Loader2 className="size-4 animate-spin text-muted-foreground" aria-label="Updating" />}
         {active > 0 && (
           <Button
@@ -140,9 +154,7 @@ export function FilterBar({ filters, sort, options }: Props) {
             size="sm"
             onClick={() => {
               setQuery("");
-              startTransition(() =>
-                router.replace(sort === "start" ? pathname : `${pathname}?sort=${sort}`, { scroll: false }),
-              );
+              navigate(new URLSearchParams(sort === "start" ? {} : { sort }));
             }}
           >
             <X /> Reset filters ({active})
@@ -153,21 +165,33 @@ export function FilterBar({ filters, sort, options }: Props) {
       <div className="flex flex-wrap gap-x-6 gap-y-2">
         <ChipGroup label="Market">
           {MARKETS.map((m) => (
-            <Chip key={m} active={filters.markets.includes(m)} onClick={() => apply({ markets: toggle(filters.markets, m) })}>
+            <Chip
+              key={m}
+              active={filters.markets.includes(m)}
+              onClick={() => apply({ markets: toggle(filters.markets, m) })}
+            >
               {m}
             </Chip>
           ))}
         </ChipGroup>
         <ChipGroup label="Phase">
           {CAMPAIGN_PHASES.map((p) => (
-            <Chip key={p} active={filters.phases.includes(p)} onClick={() => apply({ phases: toggle(filters.phases, p) })}>
+            <Chip
+              key={p}
+              active={filters.phases.includes(p)}
+              onClick={() => apply({ phases: toggle(filters.phases, p) })}
+            >
               {CAMPAIGN_PHASE_LABELS[p]}
             </Chip>
           ))}
         </ChipGroup>
         <ChipGroup label="Status">
           {TRAFFIC_LIGHTS.map((l) => (
-            <Chip key={l} active={filters.lights.includes(l)} onClick={() => apply({ lights: toggle(filters.lights, l) })}>
+            <Chip
+              key={l}
+              active={filters.lights.includes(l)}
+              onClick={() => apply({ lights: toggle(filters.lights, l) })}
+            >
               <span className={cn("size-2 rounded-full", LIGHT_DOT[l])} aria-hidden />
               {LIGHT_LABELS[l]}
             </Chip>
@@ -175,54 +199,56 @@ export function FilterBar({ filters, sort, options }: Props) {
         </ChipGroup>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
-        <FilterSelect
-          id="f-brand"
-          label="Brand"
-          value={filters.brand ?? ""}
-          onChange={(v) => apply({ brand: v || undefined })}
-          options={options.brands.map((b) => ({ value: b, label: b }))}
-        />
-        <FilterSelect
-          id="f-product"
-          label="Product line"
-          value={filters.productLine ?? ""}
-          onChange={(v) => apply({ productLine: v || undefined })}
-          options={options.productLines.map((p) => ({ value: p, label: p }))}
-        />
-        <FilterSelect
-          id="f-owner"
-          label="Owner"
-          value={filters.ownerId ?? ""}
-          onChange={(v) => apply({ ownerId: v || undefined })}
-          options={options.owners.map((o) => ({ value: o.id, label: o.name }))}
-        />
-        <FilterSelect
-          id="f-exec"
-          label="Execution"
-          value={filters.executionTypes[0] ?? ""}
-          onChange={(v) => apply({ executionTypes: v ? [v as ExecutionType] : [] })}
-          options={EXECUTION_TYPES.map((t) => ({ value: t, label: EXECUTION_TYPE_LABELS[t] }))}
-        />
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="f-from">Period from</Label>
-          <Input
-            id="f-from"
-            type="date"
-            value={dateValue(filters.from)}
-            onChange={(e) => apply({ from: parseDateInput(e.target.value) ?? undefined })}
+      {showMore && (
+        <div id="more-filters" className="grid gap-3 border-t pt-4 sm:grid-cols-2 lg:grid-cols-6">
+          <FilterSelect
+            id="f-brand"
+            label="Brand"
+            value={filters.brand ?? ""}
+            onChange={(v) => apply({ brand: v || undefined })}
+            options={options.brands.map((b) => ({ value: b, label: b }))}
           />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="f-to">to</Label>
-          <Input
-            id="f-to"
-            type="date"
-            value={dateValue(filters.to)}
-            onChange={(e) => apply({ to: parseDateInput(e.target.value) ?? undefined })}
+          <FilterSelect
+            id="f-product"
+            label="Product line"
+            value={filters.productLine ?? ""}
+            onChange={(v) => apply({ productLine: v || undefined })}
+            options={options.productLines.map((p) => ({ value: p, label: p }))}
           />
+          <FilterSelect
+            id="f-owner"
+            label="Owner"
+            value={filters.ownerId ?? ""}
+            onChange={(v) => apply({ ownerId: v || undefined })}
+            options={options.owners.map((o) => ({ value: o.id, label: o.name }))}
+          />
+          <FilterSelect
+            id="f-exec"
+            label="Execution"
+            value={filters.executionTypes[0] ?? ""}
+            onChange={(v) => apply({ executionTypes: v ? [v as ExecutionType] : [] })}
+            options={EXECUTION_TYPES.map((t) => ({ value: t, label: EXECUTION_TYPE_LABELS[t] }))}
+          />
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="f-from">Period from</Label>
+            <Input
+              id="f-from"
+              type="date"
+              value={dateValue(filters.from)}
+              onChange={(e) => apply({ from: parseDateInput(e.target.value) ?? undefined })}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="f-to">to</Label>
+            <Input
+              id="f-to"
+              type="date"
+              value={dateValue(filters.to)}
+              onChange={(e) => apply({ to: parseDateInput(e.target.value) ?? undefined })}
+            />
+          </div>
         </div>
-      </div>
+      )}
     </section>
   );
 }
