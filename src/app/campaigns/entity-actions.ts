@@ -45,7 +45,14 @@ async function checkUsers(fields: Record<string, string | null | undefined>): Pr
 
 async function log(
   tx: Prisma.TransactionClient,
-  entry: { entityType: "channel" | "asset"; entityId: string; action: string; details?: Prisma.InputJsonValue; userId: string },
+  entry: {
+    campaignId: string;
+    entityType: "channel" | "asset";
+    entityId: string;
+    action: string;
+    details?: Prisma.InputJsonValue;
+    userId: string;
+  },
 ) {
   await tx.activityLog.create({ data: entry });
 }
@@ -74,6 +81,7 @@ export async function createChannel(campaignId: string, values: ChannelEditValue
       data: { ...data, campaignId, sortOrder: (last?.sortOrder ?? -1) + 1 },
     });
     await log(tx, {
+      campaignId,
       entityType: "channel",
       entityId: channel.id,
       action: "created",
@@ -106,10 +114,11 @@ export async function updateChannel(channelId: string, values: ChannelEditValues
     await db.$transaction(async (tx) => {
       await tx.channel.update({ where: { id: channelId }, data });
       await log(tx, {
+        campaignId: channel.campaignId,
         entityType: "channel",
         entityId: channelId,
         action: "updated",
-        details: { changes } as unknown as Prisma.InputJsonValue,
+        details: { name: data.name, changes } as unknown as Prisma.InputJsonValue,
         userId: auth.user.id,
       });
     });
@@ -132,6 +141,7 @@ export async function deleteChannel(channelId: string): Promise<EntityActionResu
   await db.$transaction(async (tx) => {
     await tx.channel.delete({ where: { id: channelId } });
     await log(tx, {
+      campaignId: channel.campaign.id,
       entityType: "channel",
       entityId: channelId,
       action: "deleted",
@@ -165,10 +175,11 @@ export async function createAsset(channelId: string, values: AssetEditValues): P
       data: { ...assetDataFromInput(result.data), channelId, sortOrder: (last?.sortOrder ?? -1) + 1 },
     });
     await log(tx, {
+      campaignId: channel.campaignId,
       entityType: "asset",
       entityId: asset.id,
       action: "created",
-      details: { title: asset.title, status: asset.status },
+      details: { title: asset.title, status: asset.status, channelId },
       userId: auth.user.id,
     });
     return asset.id;
@@ -185,11 +196,13 @@ async function applyAssetUpdate(
 ): Promise<EntityActionResult> {
   const asset = await db.asset.findUnique({
     where: { id: assetId },
-    include: { channel: { select: { campaign: { select: { slug: true } } } } },
+    include: { channel: { select: { campaignId: true, campaign: { select: { slug: true } } } } },
   });
   if (!asset) return notFound("Asset");
 
   const data = update(asset);
+  const campaignId = asset.channel.campaignId;
+  const title = data.title ?? asset.title;
   const changes = diffFields(asset, data);
   if (changes.length > 0) {
     const statusChange = changes.find((c) => c.field === "status");
@@ -198,19 +211,21 @@ async function applyAssetUpdate(
       await tx.asset.update({ where: { id: assetId }, data });
       if (statusChange) {
         await log(tx, {
+          campaignId,
           entityType: "asset",
           entityId: assetId,
           action: "status_changed",
-          details: { from: statusChange.from, to: statusChange.to } as Prisma.InputJsonValue,
+          details: { title, from: statusChange.from, to: statusChange.to } as Prisma.InputJsonValue,
           userId,
         });
       }
       if (otherChanges.length > 0) {
         await log(tx, {
+          campaignId,
           entityType: "asset",
           entityId: assetId,
           action: "updated",
-          details: { changes: otherChanges } as unknown as Prisma.InputJsonValue,
+          details: { title, changes: otherChanges } as unknown as Prisma.InputJsonValue,
           userId,
         });
       }
@@ -248,13 +263,14 @@ export async function deleteAsset(assetId: string): Promise<EntityActionResult> 
 
   const asset = await db.asset.findUnique({
     where: { id: assetId },
-    include: { channel: { select: { id: true, campaign: { select: { slug: true } } } } },
+    include: { channel: { select: { id: true, campaignId: true, campaign: { select: { slug: true } } } } },
   });
   if (!asset) return notFound("Asset");
 
   await db.$transaction(async (tx) => {
     await tx.asset.delete({ where: { id: assetId } });
     await log(tx, {
+      campaignId: asset.channel.campaignId,
       entityType: "asset",
       entityId: assetId,
       action: "deleted",

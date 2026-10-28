@@ -20,6 +20,7 @@ import { FilterBar } from "@/components/dashboard/filter-bar";
 import { CampaignCard } from "@/components/dashboard/campaign-card";
 import { CompareProvider } from "@/components/dashboard/compare";
 import { CriticalList } from "@/components/dashboard/critical-list";
+import { RecentActivity } from "@/components/dashboard/recent-activity";
 
 export const dynamic = "force-dynamic";
 
@@ -112,11 +113,14 @@ export default async function DashboardPage({
             )}
           </section>
 
-          <aside className="lg:sticky lg:top-4">
-            <CriticalList overdue={overdueAssets(visible, now)} dueSoon={dueSoonAssets(visible, now)} />
-            {filtered && (
-              <p className="mt-2 px-1 text-xs text-muted-foreground">Only includes the filtered campaigns.</p>
-            )}
+          <aside className="space-y-6">
+            <div>
+              <CriticalList overdue={overdueAssets(visible, now)} dueSoon={dueSoonAssets(visible, now)} />
+              {filtered && (
+                <p className="mt-2 px-1 text-xs text-muted-foreground">Only includes the filtered campaigns.</p>
+              )}
+            </div>
+            <RecentActivity />
           </aside>
         </div>
       </div>

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { can, getCurrentUser } from "@/lib/auth";
-import { getCampaignBySlug, getCharterFormOptions } from "@/lib/queries";
+import { getCampaignActivity, getCampaignBySlug, getCampaignComments, getCharterFormOptions } from "@/lib/queries";
 import { CampaignMindmap } from "@/components/mindmap/campaign-mindmap";
 import type { Selection } from "@/components/mindmap/detail-panel";
 
@@ -19,6 +19,7 @@ export default async function CampaignMindmapPage({
     getCurrentUser(),
   ]);
   if (!campaign) notFound();
+  const [comments, activity] = await Promise.all([getCampaignComments(campaign.id), getCampaignActivity(campaign.id)]);
 
   const initialSelection: Selection | null = query.asset
     ? { kind: "asset", id: query.asset }
@@ -33,6 +34,7 @@ export default async function CampaignMindmapPage({
       options={options}
       canEdit={!!user && can(user.role, "write")}
       initialSelection={initialSelection}
+      team={{ comments, activity, user: user && { id: user.id, role: user.role } }}
     />
   );
 }

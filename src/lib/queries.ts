@@ -90,3 +90,48 @@ export async function getCampaignReports(campaignId: string) {
   ]);
   return { reports, values };
 }
+
+const activityInclude = { user: { select: { name: true } } } as const;
+const commentInclude = { author: { select: { id: true, name: true } } } as const;
+
+/** Comments on a campaign and its channels/assets, oldest first (threads read top to bottom). */
+export async function getCampaignComments(campaignId: string) {
+  return db.comment.findMany({ where: { campaignId }, orderBy: { createdAt: "asc" }, include: commentInclude });
+}
+
+/** Activity log of a campaign, newest first. */
+export async function getCampaignActivity(campaignId: string, take = 300) {
+  return db.activityLog.findMany({ where: { campaignId }, orderBy: { createdAt: "desc" }, take, include: activityInclude });
+}
+
+/** Latest activity across all campaigns (dashboard). */
+export async function getRecentActivity(take = 8) {
+  return db.activityLog.findMany({
+    where: { campaignId: { not: null } },
+    orderBy: { createdAt: "desc" },
+    take,
+    include: { ...activityInclude, campaign: { select: { name: true, slug: true } } },
+  });
+}
+
+/** Names of all users, channels and assets for describing activity entries. */
+export async function getActivityNames() {
+  const [users, channels, assets] = await Promise.all([
+    db.user.findMany({ select: { id: true, name: true } }),
+    db.channel.findMany({ select: { id: true, name: true } }),
+    db.asset.findMany({ select: { id: true, title: true } }),
+  ]);
+  return {
+    users: users.map((u) => [u.id, u.name] as [string, string]),
+    channels: channels.map((c) => [c.id, c.name] as [string, string]),
+    assets: assets.map((a) => [a.id, a.title] as [string, string]),
+  };
+}
+
+/** All users with how much they own (user administration). */
+export async function getUsersWithCounts() {
+  return db.user.findMany({
+    orderBy: [{ name: "asc" }],
+    include: { _count: { select: { ownedCampaigns: true, ownedChannels: true, ownedAssets: true, comments: true } } },
+  });
+}

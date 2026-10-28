@@ -44,6 +44,7 @@ export interface MindmapChannel {
 }
 
 export interface MindmapCampaign {
+  id?: string;
   name: string;
   startDate: Date;
   endDate: Date;
@@ -63,6 +64,7 @@ export type CampaignNodeData = {
   trafficLight: TrafficLight;
   progress: Progress;
   overdueCount: number;
+  commentCount: number;
 };
 
 export type StageNodeData = {
@@ -86,6 +88,7 @@ export type ChannelNodeData = {
   progress: Progress;
   kpiCount: number;
   linkCount: number;
+  commentCount: number;
   childCount: number;
   collapsed: boolean;
 };
@@ -102,6 +105,7 @@ export type AssetNodeData = {
   overdue: boolean;
   dueSoon: boolean;
   linkCount: number;
+  commentCount: number;
 };
 
 export type MindmapNodeData = CampaignNodeData | StageNodeData | ChannelNodeData | AssetNodeData;
@@ -170,12 +174,15 @@ interface TreeNode {
 export interface BuildOptions {
   /** Ids of stage/channel nodes whose children are hidden. */
   collapsed?: ReadonlySet<string>;
+  /** Number of comments per campaign/channel/asset id. */
+  commentCounts?: ReadonlyMap<string, number>;
   now?: Date;
   config?: StatusConfig;
 }
 
 function buildTree(campaign: MindmapCampaign, options: BuildOptions): TreeNode {
   const collapsed = options.collapsed ?? new Set<string>();
+  const comments = (id: string) => options.commentCounts?.get(id) ?? 0;
   const now = options.now ?? new Date();
   const config = options.config ?? statusConfig;
   const rollup = rollupCampaign(campaign, now, config);
@@ -206,6 +213,7 @@ function buildTree(campaign: MindmapCampaign, options: BuildOptions): TreeNode {
           progress: summary.progress,
           kpiCount: Object.keys(kpis).length,
           linkCount: channel.links?.length ?? 0,
+          commentCount: comments(channel.id),
           childCount: channel.assets.length,
           collapsed: channelCollapsed,
         },
@@ -228,6 +236,7 @@ function buildTree(campaign: MindmapCampaign, options: BuildOptions): TreeNode {
                 overdue: isOverdue(asset, now, config),
                 dueSoon: isDueSoonAndBehind(asset, now, config),
                 linkCount: asset.links?.length ?? 0,
+                commentCount: comments(asset.id),
               },
             })),
       };
@@ -262,6 +271,7 @@ function buildTree(campaign: MindmapCampaign, options: BuildOptions): TreeNode {
       trafficLight: rollup.campaign.trafficLight,
       progress: rollup.campaign.progress,
       overdueCount: rollup.campaign.overdueCount,
+      commentCount: campaign.id ? comments(campaign.id) : 0,
     },
     children: stages,
   };

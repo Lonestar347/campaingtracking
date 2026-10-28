@@ -61,6 +61,8 @@ model Campaign {
   channels   Channel[]
   links      Link[]
   kpiReports KpiReport[]
+  comments   Comment[]
+  activities ActivityLog[]
 
   @@index([ownerId])
 }
@@ -236,14 +238,18 @@ model Comment {
   id         String   @id @default(cuid())
   entityType String // see ENTITY_TYPES
   entityId   String
+  /// Campaign the commented object belongs to (for campaign-wide queries).
+  campaignId String?
   authorId   String
   body       String
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  author User @relation(fields: [authorId], references: [id])
+  author   User      @relation(fields: [authorId], references: [id])
+  campaign Campaign? @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 
   @@index([entityType, entityId])
+  @@index([campaignId, createdAt])
 }
 
 /// Who changed what and when (status changes, uploads, charter changes, ...).
@@ -253,11 +259,15 @@ model ActivityLog {
   entityId   String
   action     String // e.g. "created", "status_changed", "charter_updated"
   details    Json? // e.g. { "from": "BRIEFING", "to": "IN_PRODUCTION" }
+  /// Campaign the entry belongs to; null for entries outside campaigns (e.g. user management).
+  campaignId String?
   userId     String?
   createdAt  DateTime @default(now())
 
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user     User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  campaign Campaign? @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 
   @@index([entityType, entityId])
+  @@index([campaignId, createdAt])
   @@index([createdAt])
 }

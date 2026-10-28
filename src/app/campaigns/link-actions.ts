@@ -12,27 +12,27 @@ import type { EntityActionResult } from "@/app/campaigns/entity-actions";
 
 export type LinkTarget = { campaignId: string } | { channelId: string } | { assetId: string };
 
-/** Owning object of a link: its log entity and the campaign slug for revalidation. */
+/** Owning object of a link: its log entity, campaign and slug for revalidation. */
 async function resolveOwner(
   target: { campaignId?: string | null; channelId?: string | null; assetId?: string | null },
-): Promise<{ entityType: "campaign" | "channel" | "asset"; entityId: string; slug: string } | null> {
+): Promise<{ entityType: "campaign" | "channel" | "asset"; entityId: string; campaignId: string; slug: string } | null> {
   if (target.campaignId) {
     const c = await db.campaign.findUnique({ where: { id: target.campaignId }, select: { slug: true } });
-    return c && { entityType: "campaign", entityId: target.campaignId, slug: c.slug };
+    return c && { entityType: "campaign", entityId: target.campaignId, campaignId: target.campaignId, slug: c.slug };
   }
   if (target.channelId) {
     const c = await db.channel.findUnique({
       where: { id: target.channelId },
-      select: { campaign: { select: { slug: true } } },
+      select: { campaignId: true, campaign: { select: { slug: true } } },
     });
-    return c && { entityType: "channel", entityId: target.channelId, slug: c.campaign.slug };
+    return c && { entityType: "channel", entityId: target.channelId, campaignId: c.campaignId, slug: c.campaign.slug };
   }
   if (target.assetId) {
     const a = await db.asset.findUnique({
       where: { id: target.assetId },
-      select: { channel: { select: { campaign: { select: { slug: true } } } } },
+      select: { channel: { select: { campaignId: true, campaign: { select: { slug: true } } } } },
     });
-    return a && { entityType: "asset", entityId: target.assetId, slug: a.channel.campaign.slug };
+    return a && { entityType: "asset", entityId: target.assetId, campaignId: a.channel.campaignId, slug: a.channel.campaign.slug };
   }
   return null;
 }
@@ -58,6 +58,7 @@ export async function createLink(target: LinkTarget, values: LinkFormValues): Pr
     const link = await tx.link.create({ data: { ...result.data, [ownerKey]: owner.entityId } });
     await tx.activityLog.create({
       data: {
+        campaignId: owner.campaignId,
         entityType: owner.entityType,
         entityId: owner.entityId,
         action: "link_added",
@@ -88,6 +89,7 @@ export async function updateLink(linkId: string, values: LinkFormValues): Promis
     await tx.link.update({ where: { id: linkId }, data: result.data });
     await tx.activityLog.create({
       data: {
+        campaignId: owner.campaignId,
         entityType: owner.entityType,
         entityId: owner.entityId,
         action: "link_updated",
@@ -118,6 +120,7 @@ export async function deleteLink(linkId: string): Promise<EntityActionResult> {
     await tx.link.delete({ where: { id: linkId } });
     await tx.activityLog.create({
       data: {
+        campaignId: owner.campaignId,
         entityType: owner.entityType,
         entityId: owner.entityId,
         action: "link_removed",

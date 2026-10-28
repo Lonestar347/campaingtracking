@@ -102,6 +102,7 @@ export async function createCampaignFromCharter(values: CharterFormValues): Prom
 
     await tx.activityLog.create({
       data: {
+        campaignId: campaign.id,
         entityType: "campaign",
         entityId: campaign.id,
         action: "created",
@@ -181,6 +182,7 @@ export async function updateCharter(slug: string, values: CharterFormValues): Pr
 
     await tx.activityLog.create({
       data: {
+        campaignId: campaign.id,
         entityType: "charter",
         entityId: charter.id,
         action: "charter_updated",

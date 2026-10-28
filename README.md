@@ -44,12 +44,18 @@ src/
     campaigns/entity-actions.ts  server actions: create/update/delete channels and assets, set status
     campaigns/link-actions.ts    server actions: create/update/delete links on campaign/channel/asset
     campaigns/import-actions.ts  server actions: analyse report, check/import, delete
+    campaigns/comment-actions.ts server actions: add/edit/delete comments
+    campaigns/[slug]/activity    campaign timeline (changes and comments)
+    settings/users               user administration (admins); user-actions.ts incl. dev sign-in switch
     api/reports/[id]/file        download of a report's original file
   components/            UI components (shadcn/ui conventions, components.json)
     ui/                  base components (Button, Input, Select, Field …)
     charter/             wizard and its steps
     dashboard/           filter bar, campaign card, comparison selection, critical list
     kpi-import/          import wizard, target achievement chart, delete report
+    layout/              main navigation, development sign-in switcher
+    settings/            user administration
+    team/                comment thread, activity lines/timeline rows, avatar
     links/               link management (list, form, preview image) and type icons
     mindmap/             React Flow mind map, nodes, detail panel, channel/asset forms
   lib/
@@ -64,10 +70,11 @@ src/
     mindmap/             graph building with status rollup and tree layout + tests
     kpi-import/          report import: table detection, numbers/dates, mapping, target vs. actual + tests;
                          parse-file.ts reads .xlsx (exceljs) and .csv (papaparse) – server only
+    activity/            readable activity descriptions, relative times, timeline + tests
     links.ts             link type detection, Looker Studio embed URL, link form + tests
     format.ts            number input, cent conversion, slugs, date fields
     queries.ts           data access for the pages
-    auth/                auth abstraction (today: dev user, later Auth.js + Entra ID)
+    auth/                auth abstraction (today: dev sign-in, later Auth.js + Entra ID); permissions.ts + tests
     storage/             storage abstraction (today: local file system)
     db.ts                Prisma client
 ```
@@ -131,6 +138,16 @@ src/
 - **Activity log:** creating, updating (with the changed fields), moving, deleting and status changes
   (`status_changed` with from/to) of channels and assets are logged, as are link changes
   (`link_added`, `link_updated`, `link_removed`) on the respective object.
+- **Roles:** `admin` (everything incl. user management), `editor` (create and edit), `viewer`
+  (read and comment). Everyone may comment; authors edit and delete their own comments, admins can
+  delete any comment. Server actions check permissions independently of the UI. The last admin
+  cannot lose the admin role.
+- **Sign-in (development):** until Microsoft SSO is connected, the header has a clearly marked
+  "Dev sign-in" switcher (cookie `dev-user-id`). Fallbacks: `DEV_USER_EMAIL`, then the first admin.
+  It sits behind the `AuthProvider` interface in `src/lib/auth` and must be replaced before deploying.
+- **Activity log & comments** carry a `campaignId` so a campaign's timeline is one query. Log entries
+  are rendered as sentences by `describeActivity` (tested); names of deleted objects come from the
+  details stored with the entry.
 - **Links** are attached to campaign, channel or asset via real foreign keys (cascade delete).
   **Comments** and the **activity log** attach generically to any object via `entityType` + `entityId`.
 - **Colours:** Josera Gold/Ruby only as UI accents. Traffic light colours are separate tokens
@@ -219,6 +236,22 @@ src/
   parameters), stored status values (`IDEA`, `IN_PRODUCTION`, `APPROVAL`, `DONE` …), seed data and
   sample reports. The report import still understands German reports.
 
+### Phase 7 – Team features ✅
+
+- Comments on campaigns, channels and assets in the mind map detail panel (Ctrl + Enter to send,
+  edit/delete own comments, "edited" marker); comment counts on the mind map nodes
+- History per object in the detail panel (collapsible), written as sentences, e.g. "Ben Mock changed
+  the status of “Carousel ingredients” from Briefing to In production"
+- New "Activity" tab per campaign: changes and comments as a timeline grouped by day, filters
+  All / Changes / Status changes / Comments, links into the mind map
+- Dashboard: "Recent activity" across all campaigns
+- User administration `/settings/users` (admins): add users, edit name/email/team/role, role
+  overview; duplicate emails and removing the last admin are prevented
+- Header navigation and development sign-in switcher to try the roles
+- Schema: `Comment.campaignId`, `ActivityLog.campaignId` – run `npm run db:push` after updating
+  (or `npm run db:reset` for fresh sample data)
+
 ### Next
 
-Phase 7 – Team features: comments, activity log, roles.
+Later (phase 8): Microsoft SSO (Auth.js + Entra ID), server deployment with PostgreSQL, timeline/Gantt
+across campaigns, PDF export of the charter, API integrations (Frontify, SharePoint/Graph, Looker).

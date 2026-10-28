@@ -244,6 +244,7 @@ export async function runImport(input: RunImportInput): Promise<RunImportResult>
     }
     await tx.activityLog.create({
       data: {
+        campaignId: campaign.id,
         entityType: "kpi_report",
         entityId: report.id,
         action: "imported",
@@ -268,6 +269,7 @@ export async function deleteReport(reportId: string): Promise<{ ok: boolean; err
     await tx.kpiReport.delete({ where: { id: reportId } });
     await tx.activityLog.create({
       data: {
+        campaignId: report.campaignId,
         entityType: "kpi_report",
         entityId: reportId,
         action: "deleted",

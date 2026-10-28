@@ -40,6 +40,9 @@ import { STAGE_STYLES } from "@/components/stage-styles";
 import { AssetStatusChip } from "@/components/asset-status";
 import { AssetForm, ChannelForm } from "@/components/mindmap/entity-forms";
 import { LinkManager } from "@/components/links/link-manager";
+import { CommentThread, type ThreadUser } from "@/components/team/comment-thread";
+import { ActivityLine } from "@/components/team/activity-items";
+import { entriesFor, type ActivityContext, type ActivityEntry, type CommentEntry } from "@/lib/activity";
 
 export type Selection =
   | { kind: "campaign" }
@@ -52,12 +55,69 @@ export type Selection =
 type Channel = CampaignDetail["channels"][number];
 type Asset = Channel["assets"][number];
 
+/** Comments, activity log and the current user for the team sections of the panel. */
+export interface TeamData {
+  comments: CommentEntry[];
+  activity: ActivityEntry[];
+  user: ThreadUser | null;
+}
+
 interface PanelProps {
   campaign: CampaignDetail;
   options: CharterFormOptions;
   canEdit: boolean;
   selection: Selection;
   onSelect: (selection: Selection | null) => void;
+  team: TeamData;
+}
+
+/** Comment thread for an object. */
+function Comments({ team, kind, id }: { team: TeamData; kind: "campaign" | "channel" | "asset"; id: string }) {
+  const comments = entriesFor(team.comments, kind, id).filter((c) => c.entityType === kind);
+  return <CommentThread target={{ entityType: kind, entityId: id }} comments={comments} user={team.user} />;
+}
+
+/** Collapsible change history of an object. */
+function History({
+  team,
+  campaign,
+  options,
+  kind,
+  id,
+}: {
+  team: TeamData;
+  campaign: CampaignDetail;
+  options: CharterFormOptions;
+  kind: "campaign" | "channel" | "asset";
+  id: string;
+}) {
+  const entries = entriesFor(team.activity, kind, id);
+  const context = React.useMemo<ActivityContext>(
+    () => ({
+      campaignName: campaign.name,
+      channels: new Map(campaign.channels.map((c) => [c.id, c.name])),
+      assets: new Map(campaign.channels.flatMap((c) => c.assets.map((a) => [a.id, a.title] as [string, string]))),
+      users: new Map(options.users.map((u) => [u.id, u.name])),
+    }),
+    [campaign, options.users],
+  );
+  if (entries.length === 0) return null;
+  const now = new Date();
+  return (
+    <details className="group/history">
+      <summary className="flex cursor-pointer list-none items-center gap-1.5 text-sm font-semibold [&::-webkit-details-marker]:hidden">
+        <ChevronRight className="size-4 transition-transform group-open/history:rotate-90" aria-hidden />
+        History <span className="font-normal text-muted-foreground">({entries.length})</span>
+      </summary>
+      <ul className="mt-3 space-y-3">
+        {entries.map((entry) => (
+          <li key={entry.id}>
+            <ActivityLine entry={entry} context={context} now={now} />
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
 }
 
 function PanelHeader({
@@ -140,7 +200,7 @@ export function DetailPanel(props: PanelProps) {
   );
 }
 
-function CampaignPanel({ campaign, canEdit, onSelect }: PanelProps) {
+function CampaignPanel({ campaign, options, canEdit, onSelect, team }: PanelProps) {
   const now = new Date();
   const rollup = rollupCampaign(campaign, now);
   const overdue = campaign.channels.flatMap((c) =>
@@ -208,6 +268,8 @@ function CampaignPanel({ campaign, canEdit, onSelect }: PanelProps) {
         </section>
 
         <LinkManager links={campaign.links} target={{ campaignId: campaign.id }} canEdit={canEdit} />
+        <Comments team={team} kind="campaign" id={campaign.id} />
+        <History team={team} campaign={campaign} options={options} kind="campaign" id={campaign.id} />
       </div>
     </>
   );
@@ -272,7 +334,7 @@ function StagePanel({ campaign, canEdit, onSelect, stage }: PanelProps & { stage
   );
 }
 
-function ChannelPanel({ campaign, options, canEdit, onSelect, channelId }: PanelProps & { channelId: string }) {
+function ChannelPanel({ campaign, options, canEdit, onSelect, channelId, team }: PanelProps & { channelId: string }) {
   const router = useRouter();
   const channel = campaign.channels.find((c) => c.id === channelId);
   const [deleting, startDelete] = React.useTransition();
@@ -341,6 +403,8 @@ function ChannelPanel({ campaign, options, canEdit, onSelect, channelId }: Panel
 
         <LinkManager links={channel.links} target={{ channelId: channel.id }} canEdit={canEdit} />
 
+        <Comments team={team} kind="channel" id={channel.id} />
+
         {canEdit ? (
           <section>
             <SectionTitle>Edit channel</SectionTitle>
@@ -364,6 +428,7 @@ function ChannelPanel({ campaign, options, canEdit, onSelect, channelId }: Panel
           </section>
         )}
 
+        <History team={team} campaign={campaign} options={options} kind="channel" id={channel.id} />
       </div>
     </>
   );
@@ -371,7 +436,7 @@ function ChannelPanel({ campaign, options, canEdit, onSelect, channelId }: Panel
 
 const WORKFLOW: AssetStatus[] = ["IDEA", "BRIEFING", "IN_PRODUCTION", "APPROVAL", "DONE", "LIVE"];
 
-function AssetPanel({ campaign, options, canEdit, onSelect, assetId }: PanelProps & { assetId: string }) {
+function AssetPanel({ campaign, options, canEdit, onSelect, assetId, team }: PanelProps & { assetId: string }) {
   const router = useRouter();
   const [pending, startTransition] = React.useTransition();
   const [error, setError] = React.useState<string | null>(null);
@@ -482,6 +547,8 @@ function AssetPanel({ campaign, options, canEdit, onSelect, assetId }: PanelProp
 
         <LinkManager links={asset.links} target={{ assetId: asset.id }} canEdit={canEdit} />
 
+        <Comments team={team} kind="asset" id={asset.id} />
+
         {canEdit && (
           <section>
             <SectionTitle>Edit asset</SectionTitle>
@@ -497,6 +564,7 @@ function AssetPanel({ campaign, options, canEdit, onSelect, assetId }: PanelProp
           </section>
         )}
 
+        <History team={team} campaign={campaign} options={options} kind="asset" id={asset.id} />
       </div>
     </>
   );

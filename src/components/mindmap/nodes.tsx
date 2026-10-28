@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Handle, Position, type NodeProps, type Node } from "@xyflow/react";
-import { ChevronLeft, ChevronRight, Link2, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Link2, MessageSquare, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ASSET_TYPE_LABELS, CAMPAIGN_PHASE_LABELS, type AssetType, type TrafficLight } from "@/lib/domain/enums";
 import { formatDate, formatDateRange } from "@/lib/dates";
@@ -147,7 +147,15 @@ export function CampaignNode({ data, selected }: NodeProps<Node<CampaignNodeData
         <p className="line-clamp-2 flex-1 font-semibold leading-tight">{data.name}</p>
         <LightDot light={data.trafficLight} />
       </div>
-      <p className="mt-1 text-xs text-muted-foreground">{formatDateRange(data.startDate, data.endDate)}</p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        {formatDateRange(data.startDate, data.endDate)}
+        {data.commentCount > 0 && (
+          <span title={`${data.commentCount} comment(s)`}>
+            {" · "}
+            <MessageSquare className="inline size-3 align-[-2px]" aria-label="Comments" /> {data.commentCount}
+          </span>
+        )}
+      </p>
       <div className="mt-1.5 flex items-center gap-2">
         <span className="rounded bg-secondary px-1.5 py-0.5 text-[11px] font-medium">
           {CAMPAIGN_PHASE_LABELS[data.phase]}
@@ -193,9 +201,15 @@ export function ChannelNode({ id, data, selected }: NodeProps<Node<ChannelNodeDa
         {data.ownerName ?? "No owner"}
         {data.kpiCount > 0 && ` · ${data.kpiCount} KPI`}
         {data.linkCount > 0 && (
-          <span title={`${data.linkCount} Link(s)`}>
+          <span title={`${data.linkCount} link(s)`}>
             {" · "}
             <Link2 className="inline size-3 align-[-2px]" aria-label="Links" /> {data.linkCount}
+          </span>
+        )}
+        {data.commentCount > 0 && (
+          <span title={`${data.commentCount} comment(s)`}>
+            {" · "}
+            <MessageSquare className="inline size-3 align-[-2px]" aria-label="Comments" /> {data.commentCount}
           </span>
         )}
       </p>
@@ -230,8 +244,13 @@ export function AssetNode({ data, selected }: NodeProps<Node<AssetNodeData>>) {
       <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
         <span>{ASSET_TYPE_LABELS[data.assetType as AssetType] ?? data.assetType}</span>
         {data.linkCount > 0 && (
-          <span className="inline-flex items-center gap-0.5" title={`${data.linkCount} Link(s)`}>
+          <span className="inline-flex items-center gap-0.5" title={`${data.linkCount} link(s)`}>
             <Link2 className="size-3" aria-label="Links" /> {data.linkCount}
+          </span>
+        )}
+        {data.commentCount > 0 && (
+          <span className="inline-flex items-center gap-0.5" title={`${data.commentCount} comment(s)`}>
+            <MessageSquare className="size-3" aria-label="Comments" /> {data.commentCount}
           </span>
         )}
         {data.dueDate && (

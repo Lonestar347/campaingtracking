@@ -28,7 +28,7 @@ import {
 import type { CampaignDetail, CharterFormOptions } from "@/lib/queries";
 import { KpiDatalist } from "@/components/kpi-datalist";
 import { MindmapActionsContext, nodeTypes } from "@/components/mindmap/nodes";
-import { DetailPanel, type Selection } from "@/components/mindmap/detail-panel";
+import { DetailPanel, type Selection, type TeamData } from "@/components/mindmap/detail-panel";
 
 interface Props {
   campaign: CampaignDetail;
@@ -36,6 +36,7 @@ interface Props {
   canEdit: boolean;
   /** Initially selected entity, e.g. from ?asset=<id>. */
   initialSelection?: Selection | null;
+  team: TeamData;
 }
 
 const collapsedKey = (campaignId: string) => `campaign-tracker:mindmap-collapsed:${campaignId}`;
@@ -102,7 +103,7 @@ export function CampaignMindmap(props: Props) {
   );
 }
 
-function MindmapCanvas({ campaign, options, canEdit, initialSelection = null }: Props) {
+function MindmapCanvas({ campaign, options, canEdit, initialSelection = null, team }: Props) {
   const { fitView } = useReactFlow();
   const [collapsed, setCollapsed] = React.useState<Set<string>>(() => new Set());
   const [selection, setSelection] = React.useState<Selection | null>(initialSelection);
@@ -148,9 +149,15 @@ function MindmapCanvas({ campaign, options, canEdit, initialSelection = null }: 
     [campaign, collapsed, updateCollapsed],
   );
 
+  const commentCounts = React.useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const c of team.comments) counts.set(c.entityId, (counts.get(c.entityId) ?? 0) + 1);
+    return counts;
+  }, [team.comments]);
+
   const graph = React.useMemo(
-    () => buildMindmap(campaign, { collapsed, now: now ?? undefined }),
-    [campaign, collapsed, now],
+    () => buildMindmap(campaign, { collapsed, now: now ?? undefined, commentCounts }),
+    [campaign, collapsed, now, commentCounts],
   );
 
   const selectedNodeId = nodeIdFor(selection);
@@ -284,6 +291,7 @@ function MindmapCanvas({ campaign, options, canEdit, initialSelection = null }: 
             canEdit={canEdit}
             selection={selection}
             onSelect={select}
+            team={team}
           />
         )}
       </div>

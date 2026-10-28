@@ -361,7 +361,16 @@ async function main() {
     });
 
     await db.activityLog.create({
-      data: { entityType: "campaign", entityId: campaign.id, action: "created", userId: ownerId },
+      data: {
+        campaignId: campaign.id,
+        entityType: "campaign",
+        entityId: campaign.id,
+        action: "created",
+        details: { via: "launch_charter", channels: c.channels.length, assets: c.channels.reduce((n, ch) => n + ch.assets.length, 0) },
+        userId: ownerId,
+        // Campaigns were "created" a few weeks before their start, and at least a few days ago.
+        createdAt: new Date(Math.min(Date.now() - 4 * 86_400_000, day(c.start - 21).getTime())),
+      },
     });
 
     for (const [chIndex, ch] of c.channels.entries()) {
@@ -397,28 +406,97 @@ async function main() {
     }
   }
 
-  // A couple of comments and status changes so the team features have data.
-  const overdue = await db.asset.findFirstOrThrow({ where: { title: "Carousel ingredients" } });
-  await db.comment.create({
-    data: {
+  // Comments and status changes so the team features have data.
+  const hoursAgo = (h: number) => new Date(Date.now() - h * 3_600_000);
+  const findAsset = (title: string) =>
+    db.asset.findFirstOrThrow({ where: { title }, include: { channel: { select: { campaignId: true } } } });
+  const findChannel = (name: string) => db.channel.findFirstOrThrow({ where: { name } });
+
+  const carousel = await findAsset("Carousel ingredients");
+  const guide = await findAsset("Guide: coat care through nutrition");
+  const reel = await findAsset("Reel 9:16 – coat");
+  const samplingBox = await findAsset("Sampling box design");
+  const social = await findChannel("Social Reach (Paid)");
+  const autumn = await db.campaign.findUniqueOrThrow({ where: { slug: "autumn-campaign-dog" } });
+
+  const comments: { entityType: string; entityId: string; campaignId: string; author: UserKey; body: string; at: number }[] = [
+    {
       entityType: "asset",
-      entityId: overdue.id,
-      authorId: userId("anna")!,
+      entityId: carousel.id,
+      campaignId: carousel.channel.campaignId,
+      author: "anna",
       body: "Please finish by the end of the week – the week 3 placement depends on it.",
+      at: 50,
     },
-  });
-  await db.activityLog.create({
-    data: {
+    {
       entityType: "asset",
-      entityId: overdue.id,
-      action: "status_changed",
-      details: { from: "BRIEFING", to: "IN_PRODUCTION" },
-      userId: userId("ben"),
+      entityId: carousel.id,
+      campaignId: carousel.channel.campaignId,
+      author: "ben",
+      body: "Final version will be ready on Thursday, we are still waiting for the product shots.",
+      at: 26,
     },
-  });
+    {
+      entityType: "channel",
+      entityId: social.id,
+      campaignId: social.campaignId,
+      author: "david",
+      body: "Budget shift towards Reels approved – details in the SharePoint folder.",
+      at: 72,
+    },
+    {
+      entityType: "campaign",
+      entityId: autumn.id,
+      campaignId: autumn.id,
+      author: "felix",
+      body: "Retail partners confirmed placements in 214 stores.",
+      at: 5,
+    },
+    {
+      entityType: "asset",
+      entityId: samplingBox.id,
+      campaignId: samplingBox.channel.campaignId,
+      author: "clara",
+      body: "Briefing sent to the printer, proof expected next week.",
+      at: 8,
+    },
+  ];
+  for (const c of comments) {
+    await db.comment.create({
+      data: {
+        entityType: c.entityType,
+        entityId: c.entityId,
+        campaignId: c.campaignId,
+        authorId: userId(c.author)!,
+        body: c.body,
+        createdAt: hoursAgo(c.at),
+        updatedAt: hoursAgo(c.at),
+      },
+    });
+  }
+
+  const statusChanges: { asset: typeof carousel; from: string; to: string; by: UserKey; at: number }[] = [
+    { asset: reel, from: "DONE", to: "LIVE", by: "david", at: 430 },
+    { asset: carousel, from: "BRIEFING", to: "IN_PRODUCTION", by: "ben", at: 74 },
+    { asset: guide, from: "IN_PRODUCTION", to: "APPROVAL", by: "clara", at: 20 },
+  ];
+  for (const sc of statusChanges) {
+    await db.activityLog.create({
+      data: {
+        campaignId: sc.asset.channel.campaignId,
+        entityType: "asset",
+        entityId: sc.asset.id,
+        action: "status_changed",
+        details: { title: sc.asset.title, from: sc.from, to: sc.to },
+        userId: userId(sc.by),
+        createdAt: hoursAgo(sc.at),
+      },
+    });
+  }
 
   const counts = {
     users: await db.user.count(),
+    comments: await db.comment.count(),
     channelTypes: await db.channelType.count(),
     campaigns: await db.campaign.count(),
     channels: await db.channel.count(),
