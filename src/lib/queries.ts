@@ -21,9 +21,10 @@ export const getCampaignBySlug = cache(async (slug: string) => {
         include: {
           channelType: { select: { name: true } },
           owner: { select: { name: true } },
+          links: { orderBy: { createdAt: "asc" } },
           assets: {
             orderBy: { sortOrder: "asc" },
-            include: { owner: { select: { name: true } } },
+            include: { owner: { select: { name: true } }, links: { orderBy: { createdAt: "asc" } } },
           },
         },
       },

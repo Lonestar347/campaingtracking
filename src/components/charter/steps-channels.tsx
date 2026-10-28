@@ -16,6 +16,7 @@ import {
 import type { ChannelFormValues } from "@/lib/charter/form";
 import { STAGE_STYLES } from "@/components/stage-styles";
 import { StepIntro } from "@/components/charter/steps-basic";
+import { KpiDatalist } from "@/components/kpi-datalist";
 import {
   SelectField,
   TextField,
@@ -23,28 +24,6 @@ import {
   useCharterForm,
   useUserOptions,
 } from "@/components/charter/form-context";
-
-const KPI_SUGGESTIONS = [
-  "Impressions",
-  "Reichweite",
-  "Views",
-  "Completion Rate %",
-  "Klicks",
-  "CTR %",
-  "CPM",
-  "Engagement Rate %",
-  "Follower",
-  "Sessions",
-  "Verweildauer s",
-  "Öffnungsrate %",
-  "Leads",
-  "Conversions",
-  "Umsatz",
-  "ROAS",
-  "Platzierungen",
-  "Abverkauf Stück",
-  "Verteilte Pakete",
-];
 
 export function ChannelsStep() {
   const { values, options, update } = useCharterForm();
@@ -126,11 +105,7 @@ export function ChannelsStep() {
         ))}
       </div>
 
-      <datalist id="kpi-options">
-        {KPI_SUGGESTIONS.map((k) => (
-          <option key={k} value={k} />
-        ))}
-      </datalist>
+      <KpiDatalist />
 
       <h3 className="mt-8 text-sm font-semibold">
         Ausgewählte Kanäle <span className="font-normal text-muted-foreground">({channels.length})</span>

@@ -3,7 +3,19 @@
 // issues to wizard steps.
 
 import { z } from "zod";
-import { euroToCents, parseDateInput, parseGermanNumber } from "@/lib/format";
+import {
+  checkDateOrder,
+  dateField,
+  kpiRowsSchema,
+  moneyField,
+  optionalId,
+  optionalText,
+  requiredText,
+  toFieldErrors,
+  urlField,
+  type FieldErrors,
+  type KpiFormValues,
+} from "@/lib/validation/fields";
 import {
   ASSET_TYPES,
   EXECUTION_TYPES,
@@ -14,12 +26,6 @@ import {
 
 // ---------------------------------------------------------------------------
 // Raw form values
-
-export interface KpiFormValues {
-  clientId: string;
-  name: string;
-  target: string;
-}
 
 export interface AssetFormValues {
   clientId: string;
@@ -109,74 +115,7 @@ export function emptyCharterForm(defaults: { ownerId?: string } = {}): CharterFo
 }
 
 // ---------------------------------------------------------------------------
-// Field schemas (string in, parsed value out)
-
-const optionalText = z
-  .string()
-  .trim()
-  .transform((v) => (v === "" ? undefined : v));
-
-const requiredText = (message: string) => z.string().trim().min(1, message);
-
-const optionalId = z
-  .string()
-  .trim()
-  .transform((v) => (v === "" ? undefined : v));
-
-function dateField(required: boolean) {
-  return z.string().transform((value, ctx): Date | undefined => {
-    if (value.trim() === "") {
-      if (required) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Datum angeben" });
-      return undefined;
-    }
-    const date = parseDateInput(value.trim());
-    if (!date) ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Ungültiges Datum" });
-    return date ?? undefined;
-  });
-}
-
-/** Euro amount typed in German format -> cents. */
-const moneyField = z.string().transform((value, ctx): number | undefined => {
-  if (value.trim() === "") return undefined;
-  const euro = parseGermanNumber(value);
-  if (euro == null) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Ungültiger Betrag, z. B. 25.000 oder 1.500,50" });
-    return undefined;
-  }
-  if (euro < 0) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Betrag darf nicht negativ sein" });
-    return undefined;
-  }
-  return euroToCents(euro);
-});
-
-const urlField = z
-  .string()
-  .trim()
-  .transform((value, ctx): string | undefined => {
-    if (value === "") return undefined;
-    try {
-      const url = new URL(value);
-      if (url.protocol === "http:" || url.protocol === "https:") return value;
-    } catch {
-      // fall through
-    }
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Vollständige URL angeben (https://…)" });
-    return undefined;
-  });
-
-const kpiSchema = z.object({
-  clientId: z.string(),
-  name: requiredText("KPI-Namen angeben"),
-  target: z.string().transform((value, ctx): number => {
-    const parsed = parseGermanNumber(value);
-    if (parsed == null) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Zielwert als Zahl angeben" });
-      return 0;
-    }
-    return parsed;
-  }),
-});
+// Schemas (string in, parsed value out)
 
 const assetSchema = z.object({
   clientId: z.string(),
@@ -196,22 +135,10 @@ const channelSchema = z
     ownerId: optionalId,
     startDate: dateField(false),
     endDate: dateField(false),
-    kpis: z.array(kpiSchema),
+    kpis: kpiRowsSchema,
     assets: z.array(assetSchema),
   })
-  .superRefine((channel, ctx) => {
-    if (channel.startDate && channel.endDate && channel.endDate < channel.startDate) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["endDate"], message: "Ende liegt vor dem Start" });
-    }
-    const seen = new Set<string>();
-    channel.kpis.forEach((kpi, index) => {
-      const key = kpi.name.toLowerCase();
-      if (seen.has(key)) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["kpis", index, "name"], message: "KPI doppelt" });
-      }
-      seen.add(key);
-    });
-  });
+  .superRefine((channel, ctx) => checkDateOrder(channel.startDate, channel.endDate, ctx, ["endDate"]));
 
 const stakeholderSchema = z.object({
   clientId: z.string(),
@@ -274,14 +201,7 @@ export const charterFormSchema = z
     changeNote: optionalText,
   })
   .superRefine((form, ctx) => {
-    const { startDate, endDate } = form.basis;
-    if (startDate && endDate && endDate < startDate) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["basis", "endDate"],
-        message: "Ende liegt vor dem Start",
-      });
-    }
+    checkDateOrder(form.basis.startDate, form.basis.endDate, ctx, ["basis", "endDate"]);
     const split = Object.values(form.budget.byStage).reduce<number>((sum, v) => sum + (v ?? 0), 0);
     if (form.budget.total != null && split > form.budget.total) {
       ctx.addIssue({
@@ -309,8 +229,7 @@ export const WIZARD_STEPS = [
 ] as const;
 export type WizardStepId = (typeof WIZARD_STEPS)[number]["id"];
 
-/** Field path ("basis.name", "channels.0.assets.1.title") -> error message. */
-export type FieldErrors = Record<string, string>;
+export type { FieldErrors, KpiFormValues };
 
 /** Which wizard step a field path belongs to. */
 export function stepForPath(path: string): WizardStepId {
@@ -319,15 +238,6 @@ export function stepForPath(path: string): WizardStepId {
   if (head === "approvalProcess") return "stakeholders";
   if (head === "changeNote") return "review";
   return head as WizardStepId;
-}
-
-export function toFieldErrors(error: z.ZodError): FieldErrors {
-  const errors: FieldErrors = {};
-  for (const issue of error.issues) {
-    const key = issue.path.join(".");
-    errors[key] ??= issue.message;
-  }
-  return errors;
 }
 
 export function errorsForStep(errors: FieldErrors, step: WizardStepId): FieldErrors {

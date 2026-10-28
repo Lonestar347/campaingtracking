@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import type { Prisma } from "@prisma/client";
-import { can, getCurrentUser } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { slugify } from "@/lib/format";
 import {
@@ -23,13 +23,6 @@ import { launchCharterDataSchema } from "@/lib/validation";
 export type CharterActionResult =
   | { ok: true; slug: string; message?: string }
   | { ok: false; fieldErrors?: FieldErrors; formError?: string };
-
-async function requireEditor() {
-  const user = await getCurrentUser();
-  if (!user) return { error: "Nicht angemeldet." } as const;
-  if (!can(user.role, "write")) return { error: "Keine Berechtigung zum Bearbeiten." } as const;
-  return { user } as const;
-}
 
 /** Checks that referenced users and channel types exist. */
 async function checkReferences(input: CharterInput): Promise<FieldErrors> {
@@ -70,8 +63,8 @@ async function uniqueSlug(name: string, tx: Prisma.TransactionClient): Promise<s
 }
 
 export async function createCampaignFromCharter(values: CharterFormValues): Promise<CharterActionResult> {
-  const auth = await requireEditor();
-  if ("error" in auth) return { ok: false, formError: auth.error };
+  const auth = await requirePermission("write");
+  if (!auth.user) return { ok: false, formError: auth.error };
 
   const result = validateCharterForm(values);
   if (!result.success) return { ok: false, fieldErrors: result.errors };
@@ -127,8 +120,8 @@ export async function createCampaignFromCharter(values: CharterFormValues): Prom
 }
 
 export async function updateCharter(slug: string, values: CharterFormValues): Promise<CharterActionResult> {
-  const auth = await requireEditor();
-  if ("error" in auth) return { ok: false, formError: auth.error };
+  const auth = await requirePermission("write");
+  if (!auth.user) return { ok: false, formError: auth.error };
 
   // Channels and assets are not edited via the charter.
   const result = validateCharterForm({ ...values, channels: [] });

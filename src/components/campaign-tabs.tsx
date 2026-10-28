@@ -8,7 +8,8 @@ export function CampaignTabs({ slug }: { slug: string }) {
   const pathname = usePathname();
   const base = `/kampagnen/${slug}`;
   const tabs = [
-    { href: base, label: "Übersicht", active: pathname === base },
+    { href: base, label: "Mindmap", active: pathname === base },
+    { href: `${base}/funnel`, label: "Funnel", active: pathname === `${base}/funnel` },
     { href: `${base}/charter`, label: "Launch Charter", active: pathname.startsWith(`${base}/charter`) },
   ];
   return (

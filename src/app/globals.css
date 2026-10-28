@@ -146,3 +146,23 @@
     @apply bg-background text-foreground antialiased;
   }
 }
+
+/* React Flow (mindmap) uses the app's tokens in light and dark mode. */
+.react-flow.mindmap {
+  --xy-background-color: transparent;
+  --xy-background-pattern-color: var(--border);
+  --xy-controls-button-background-color: var(--card);
+  --xy-controls-button-background-color-hover: var(--muted);
+  --xy-controls-button-color: var(--foreground);
+  --xy-controls-button-color-hover: var(--foreground);
+  --xy-controls-button-border-color: var(--border);
+  --xy-controls-box-shadow: 0 1px 3px rgb(0 0 0 / 0.15);
+  --xy-node-boxshadow-selected: none;
+  --xy-node-border-radius: var(--radius);
+}
+
+.react-flow.mindmap .react-flow__node:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+  border-radius: var(--radius);
+}
