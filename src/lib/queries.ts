@@ -70,3 +70,23 @@ export async function getDashboardCampaigns() {
     },
   });
 }
+
+/** Imported KPI reports and all their values for a campaign (performance tab). */
+export async function getCampaignReports(campaignId: string) {
+  const [reports, values] = await Promise.all([
+    db.kpiReport.findMany({
+      where: { campaignId },
+      orderBy: { uploadedAt: "desc" },
+      include: {
+        uploadedBy: { select: { name: true } },
+        channel: { select: { name: true } },
+        _count: { select: { values: true } },
+      },
+    }),
+    db.kpiValue.findMany({
+      where: { report: { campaignId } },
+      select: { channelId: true, kpiName: true, value: true },
+    }),
+  ]);
+  return { reports, values };
+}

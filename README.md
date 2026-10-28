@@ -40,10 +40,13 @@ src/
     kampagnen/actions.ts Server Actions: Kampagne aus Charter anlegen, Charter versioniert ändern
     kampagnen/entity-actions.ts  Server Actions: Kanäle/Assets anlegen, ändern, löschen, Status setzen
     kampagnen/link-actions.ts    Server Actions: Links an Kampagne/Kanal/Asset anlegen, ändern, löschen
+    kampagnen/import-actions.ts  Server Actions: Report analysieren, prüfen/importieren, löschen
+    api/reports/[id]/datei       Download der Originaldatei eines Reports
   components/            UI-Komponenten (shadcn/ui-Konventionen, components.json)
     ui/                  Basiskomponenten (Button, Input, Select, Field …)
     charter/             Wizard und seine Schritte
     dashboard/           Filterleiste, Kampagnenkarte, Vergleichsauswahl, Kritisch-Liste
+    kpi-import/          Import-Assistent, Zielerreichungs-Diagramm, Report löschen
     links/               Link-Verwaltung (Liste, Formular, Vorschaubild) und Typ-Icons
     mindmap/             React-Flow-Mindmap, Knoten, Detail-Panel, Kanal-/Asset-Formulare
   lib/
@@ -56,6 +59,8 @@ src/
     dashboard/           Filter (URL-Parameter), Sortierung, Kritisch-Listen, Kennzahlen, Zeitleiste + Tests
     entities/            Kanal-/Asset-Formulare (Zod), Änderungserkennung fürs Activity Log + Tests
     mindmap/             Graph-Aufbau mit Status-Rollup und Baum-Layout + Tests
+    kpi-import/          Report-Import: Tabellenerkennung, Zahlen/Daten, Zuordnung, Ziel vs. Ist + Tests;
+                         parse-file.ts liest .xlsx (exceljs) und .csv (papaparse) – nur serverseitig
     links.ts             Link-Typ-Erkennung, Looker-Studio-Einbettungs-URL, Link-Formular + Tests
     format.ts            deutsche Zahleneingabe, Cent-Umrechnung, Slugs, Datumsfelder
     queries.ts           Datenzugriff für die Seiten
@@ -104,6 +109,22 @@ src/
   `Link.embed = true` werden im Performance-Tab per iframe eingebettet
   (`…/reporting/<id>` → `…/embed/reporting/<id>`); ob das klappt, entscheidet die Freigabe des
   Reports in Looker Studio – der Link zum Öffnen ist deshalb immer daneben.
+- **Report-Import:** Upload → Analyse (Tabellenblatt, Kopfzeile unter Titelzeilen, Summenzeilen
+  werden übersprungen, Zahlenformat erkannt) → Zuordnung → Prüfen (Probelauf, nichts wird
+  gespeichert) → Import. Zwei Tabellenformate: „breit“ (eine Spalte pro KPI) und „lang“ (Spalten
+  KPI + Wert). Kanalnamen aus der Datei werden mit Kanalname/-typ abgeglichen; unbekannte Namen
+  ordnet man einmalig zu – diese Zuordnung wird mit der Quelle gespeichert. Gespeicherte
+  Zuordnungen werden beim nächsten Upload anhand der Spalten wiedererkannt. Fehler (fehlende
+  Spalten, ungültige Zahlen/Daten) kommen mit Zeilennummer und blockieren den Import.
+  Die Originaldatei liegt im Storage (`storage/uploads/reports/<Kampagne>/…`).
+  Bibliotheken: exceljs + papaparse statt SheetJS – das npm-Paket `xlsx` ist veraltet (0.18.5,
+  bekannte Lücke beim Einlesen), aktuelle SheetJS-Versionen gibt es nur über deren CDN.
+  Alte `.xls`-Dateien werden daher nicht unterstützt (bitte als `.xlsx` speichern).
+- **Ziel vs. Ist:** Ist-Werte aus allen Reports eines Kanals: Mengen werden summiert, Raten und
+  Durchschnittswerte (%, CTR, CPM, ROAS, Verweildauer …) gemittelt. Bei Kosten-KPIs (CPM, CPC, CPA …)
+  ist niedriger besser, die Zielerreichung ist dort Ziel ÷ Ist. KPI-Namen werden ohne Groß-/
+  Kleinschreibung abgeglichen. Überschneiden sich Reports (gleiche Quelle und Zeitraum), warnt der
+  Import vor doppelt gezählten Werten.
 - **Activity Log:** Anlegen, Ändern (mit geänderten Feldern), Verschieben, Löschen und
   Statuswechsel (`status_changed` mit von/nach) von Kanälen und Assets werden protokolliert,
   ebenso Link-Änderungen (`link_added`, `link_updated`, `link_removed`) am jeweiligen Objekt.
@@ -183,6 +204,23 @@ src/
 - Looker-Links aus der Launch Charter werden automatisch zur Einbettung markiert
 - Schema: `Link.embed` (Boolean) – nach dem Update einmal `npm run db:push` ausführen
 
+### Phase 6 – Excel-Import ✅
+
+- Import-Assistent unter Performance → „Report importieren“: Excel (.xlsx) oder CSV bis 10 MB,
+  Tabellenblatt-Auswahl, Vorschau mit markierten Spalten, Quelle, Berichtszeitraum (aus der
+  Datumsspalte vorgeschlagen), Kanal-Spalte bzw. Standard-Kanal, breites oder langes Format,
+  KPI-Namen je Spalte (mit Vorschlägen aus den KPI-Zielen), Zahlenformat
+- Prüfen mit klaren Fehlermeldungen (Zeile + Spalte) und Zusammenfassung je Kanal/KPI;
+  unbekannte Kanalnamen direkt zuordnen; Warnungen (Summenzeilen, Werte außerhalb des Zeitraums,
+  möglicher Doppel-Import)
+- Zuordnung pro Quelle speichern und bei wiederkehrenden Reports automatisch erkennen
+- Originaldatei wird gespeichert und ist in der Report-Liste herunterladbar; Reports löschen
+- Performance-Tab: Ziel vs. Ist je Kanal/KPI (Summe bzw. Ø, Zielerreichung), Diagramm
+  „Zielerreichung je KPI“ (Recharts, gemeinsame %-Achse, Farbe = Funnel-Stufe), Werte ohne Kanal
+- Funnel-Stufen-Farben nachjustiert, damit sie die Prüfungen für Farbfehlsichtigkeit, Kontrast
+  und Sättigung in Hell und Dunkel bestehen
+- Fiktive Beispiel-Reports zum Ausprobieren in `docs/beispiel-reports/`
+
 ### Als Nächstes
 
-Phase 6 – Excel-Import: Upload, Mapping-Dialog, gespeicherte Mappings, Ziel-vs.-Ist-Ansicht.
+Phase 7 – Team-Features: Kommentare, Activity Log, Rollen.

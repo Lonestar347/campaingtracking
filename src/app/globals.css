@@ -46,7 +46,7 @@
 
   /* Funnel stages */
   --stage-awareness: #4c6ef5;
-  --stage-consideration: #12867a;
+  --stage-consideration: #008f7e;
   --stage-sales: #7950c2;
 }
 
@@ -70,9 +70,9 @@
     --status-red: #ff6b6b;
     --status-yellow: #ffa94d;
     --status-green: #51cf66;
-    --stage-awareness: #748ffc;
-    --stage-consideration: #38c3b1;
-    --stage-sales: #a685e2;
+    --stage-awareness: #6582f5;
+    --stage-consideration: #22ab9a;
+    --stage-sales: #9474d6;
   }
 }
 
@@ -95,9 +95,9 @@
   --status-red: #ff6b6b;
   --status-yellow: #ffa94d;
   --status-green: #51cf66;
-  --stage-awareness: #748ffc;
-  --stage-consideration: #38c3b1;
-  --stage-sales: #a685e2;
+  --stage-awareness: #6582f5;
+  --stage-consideration: #22ab9a;
+  --stage-sales: #9474d6;
 }
 
 @theme inline {
