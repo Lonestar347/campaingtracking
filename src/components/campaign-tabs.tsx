@@ -11,6 +11,7 @@ export function CampaignTabs({ slug }: { slug: string }) {
     { href: base, label: "Mindmap", active: pathname === base },
     { href: `${base}/funnel`, label: "Funnel", active: pathname === `${base}/funnel` },
     { href: `${base}/charter`, label: "Launch Charter", active: pathname.startsWith(`${base}/charter`) },
+    { href: `${base}/performance`, label: "Performance", active: pathname === `${base}/performance` },
   ];
   return (
     <nav className="flex gap-1 border-b print:hidden" aria-label="Kampagnenansichten">

@@ -170,6 +170,7 @@ model Link {
   url          String
   label        String?
   thumbnailUrl String?
+  embed        Boolean  @default(false) // Looker Studio: embed in the performance tab
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

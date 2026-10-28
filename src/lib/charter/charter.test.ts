@@ -141,7 +141,7 @@ describe("buildCampaignPlan", () => {
     expect(plan.charterData.basis?.startDate).toBe("2026-11-01");
     expect(plan.charterData.budget.byFunnelStageCents).toEqual({ AWARENESS: 6_000_000, SALES: 4_000_000 });
     expect(plan.links).toEqual([
-      { type: "frontify", url: "https://example.frontify.com/x", label: "Frontify-Ordner" },
+      { type: "frontify", url: "https://example.frontify.com/x", label: "Frontify-Ordner", embed: false },
     ]);
 
     expect(plan.channels).toHaveLength(2);

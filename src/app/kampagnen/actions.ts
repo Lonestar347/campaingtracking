@@ -19,6 +19,7 @@ import {
   diffCharterLinks,
 } from "@/lib/charter/plan";
 import { launchCharterDataSchema } from "@/lib/validation";
+import { toLookerEmbedUrl } from "@/lib/links";
 
 export type CharterActionResult =
   | { ok: true; slug: string; message?: string }
@@ -167,7 +168,13 @@ export async function updateCharter(slug: string, values: CharterFormValues): Pr
       }
       if (change.add) {
         await tx.link.create({
-          data: { campaignId: campaign.id, type: change.type, url: change.add, label: change.label },
+          data: {
+            campaignId: campaign.id,
+            type: change.type,
+            url: change.add,
+            label: change.label,
+            embed: change.type === "looker_studio" && toLookerEmbedUrl(change.add) != null,
+          },
         });
       }
     }

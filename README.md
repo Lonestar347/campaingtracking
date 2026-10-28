@@ -36,13 +36,15 @@ src/
     page.tsx             Dashboard (Kennzahlen, Filter, Kampagnenkarten, Kritisch-Bereich)
     vergleich/           Kampagnen nebeneinander vergleichen (?k=slug-a,slug-b)
     kampagnen/neu        Launch-Charter-Wizard (neue Kampagne)
-    kampagnen/[slug]     Mindmap (Kernansicht), Funnel-Ansicht, Charter-Ansicht, Charter bearbeiten
+    kampagnen/[slug]     Mindmap (Kernansicht), Funnel-, Charter- und Performance-Ansicht, Charter bearbeiten
     kampagnen/actions.ts Server Actions: Kampagne aus Charter anlegen, Charter versioniert ändern
     kampagnen/entity-actions.ts  Server Actions: Kanäle/Assets anlegen, ändern, löschen, Status setzen
+    kampagnen/link-actions.ts    Server Actions: Links an Kampagne/Kanal/Asset anlegen, ändern, löschen
   components/            UI-Komponenten (shadcn/ui-Konventionen, components.json)
     ui/                  Basiskomponenten (Button, Input, Select, Field …)
     charter/             Wizard und seine Schritte
     dashboard/           Filterleiste, Kampagnenkarte, Vergleichsauswahl, Kritisch-Liste
+    links/               Link-Verwaltung (Liste, Formular, Vorschaubild) und Typ-Icons
     mindmap/             React-Flow-Mindmap, Knoten, Detail-Panel, Kanal-/Asset-Formulare
   lib/
     config.ts            zentrale Schwellen (z. B. „fällig in 7 Tagen“), Zeitzone, Locale
@@ -54,6 +56,7 @@ src/
     dashboard/           Filter (URL-Parameter), Sortierung, Kritisch-Listen, Kennzahlen, Zeitleiste + Tests
     entities/            Kanal-/Asset-Formulare (Zod), Änderungserkennung fürs Activity Log + Tests
     mindmap/             Graph-Aufbau mit Status-Rollup und Baum-Layout + Tests
+    links.ts             Link-Typ-Erkennung, Looker-Studio-Einbettungs-URL, Link-Formular + Tests
     format.ts            deutsche Zahleneingabe, Cent-Umrechnung, Slugs, Datumsfelder
     queries.ts           Datenzugriff für die Seiten
     auth/                Auth-Abstraktion (heute: Dev-User, später Auth.js + Entra ID)
@@ -95,8 +98,15 @@ src/
   gefilterte Ansichten lassen sich also als Link teilen. Markt: Kampagne läuft in mindestens einem der
   gewählten Märkte. Zeitraum: Kampagnenzeitraum überschneidet sich mit dem gewählten Zeitraum.
   Kennzahlen und Kritisch-Bereich beziehen sich auf die gefilterten Kampagnen.
+- **Links:** Der Typ wird aus der URL erkannt (`*.frontify.com`, `*.sharepoint.com`,
+  `lookerstudio.google.com`), lässt sich aber überschreiben. Icons sind neutrale Symbole, keine
+  Hersteller-Logos. Vorschaubilder sind optionale Bild-URLs. Looker-Studio-Links mit
+  `Link.embed = true` werden im Performance-Tab per iframe eingebettet
+  (`…/reporting/<id>` → `…/embed/reporting/<id>`); ob das klappt, entscheidet die Freigabe des
+  Reports in Looker Studio – der Link zum Öffnen ist deshalb immer daneben.
 - **Activity Log:** Anlegen, Ändern (mit geänderten Feldern), Verschieben, Löschen und
-  Statuswechsel (`status_changed` mit von/nach) von Kanälen und Assets werden protokolliert.
+  Statuswechsel (`status_changed` mit von/nach) von Kanälen und Assets werden protokolliert,
+  ebenso Link-Änderungen (`link_added`, `link_updated`, `link_removed`) am jeweiligen Objekt.
 - **Links** hängen über echte Fremdschlüssel an Kampagne, Kanal oder Asset (Cascade-Delete).
   **Kommentare** und **Activity Log** hängen generisch über `entityType` + `entityId` an jedem Objekt.
 - **Farben:** Josera Gold/Ruby nur als UI-Akzent. Ampelfarben sind eigene Tokens
@@ -163,7 +173,16 @@ src/
   Zeitleiste (inkl. Heute-Markierung) und Gegenüberstellung von Eckdaten, Budget je Stufe,
   Fortschritt und Ampel je Funnel-Stufe, überfälligen/bald fälligen Assets
 
+### Phase 5 – Links & Integrationen ✅
+
+- Links an Kampagne, Kanal und Asset im Detail-Panel der Mindmap anlegen, bearbeiten, entfernen
+  (URL, automatisch erkannter oder gewählter Typ, Bezeichnung, optionales Vorschaubild)
+- Anzeige mit Typ-Icon bzw. Vorschaubild; Link-Anzahl an Kanal- und Asset-Knoten in der Mindmap
+- Neuer Tab „Performance“: Looker-Studio-Reports der Kampagne und ihrer Kanäle, eingebettet wenn
+  aktiviert, mit Hinweis und Link als Fallback; KPI-Ziele je Kanal (Ist-Werte folgen mit Phase 6)
+- Looker-Links aus der Launch Charter werden automatisch zur Einbettung markiert
+- Schema: `Link.embed` (Boolean) – nach dem Update einmal `npm run db:push` ausführen
+
 ### Als Nächstes
 
-Phase 5 – Links & Integrationen: Frontify-, SharePoint-, Looker-Studio-Links an Kampagne, Kanal
-und Asset pflegen, Looker-Einbettung.
+Phase 6 – Excel-Import: Upload, Mapping-Dialog, gespeicherte Mappings, Ziel-vs.-Ist-Ansicht.

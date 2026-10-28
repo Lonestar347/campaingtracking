@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronRight, ExternalLink, Plus, X } from "lucide-react";
+import { ChevronRight, Plus, X } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -39,6 +39,7 @@ import { ProgressBar, TrafficLightBadge } from "@/components/status-badges";
 import { STAGE_STYLES } from "@/components/stage-styles";
 import { AssetStatusChip } from "@/components/asset-status";
 import { AssetForm, ChannelForm } from "@/components/mindmap/entity-forms";
+import { LinkManager } from "@/components/links/link-manager";
 
 export type Selection =
   | { kind: "campaign" }
@@ -50,13 +51,6 @@ export type Selection =
 
 type Channel = CampaignDetail["channels"][number];
 type Asset = Channel["assets"][number];
-
-const LINK_TYPE_LABELS: Record<string, string> = {
-  frontify: "Frontify",
-  sharepoint: "SharePoint",
-  looker_studio: "Looker Studio",
-  other: "Link",
-};
 
 interface PanelProps {
   campaign: CampaignDetail;
@@ -112,33 +106,6 @@ function ListButton({ onClick, children }: { onClick: () => void; children: Reac
   );
 }
 
-function LinkList({ links }: { links: { id: string; type: string; url: string; label: string | null }[] }) {
-  if (links.length === 0) return null;
-  return (
-    <section>
-      <SectionTitle>Links</SectionTitle>
-      <ul className="space-y-1">
-        {links.map((link) => (
-          <li key={link.id}>
-            <a
-              href={link.url}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted"
-            >
-              <span className="w-20 shrink-0 text-xs font-semibold text-muted-foreground">
-                {LINK_TYPE_LABELS[link.type] ?? link.type}
-              </span>
-              <span className="min-w-0 flex-1 truncate">{link.label ?? link.url}</span>
-              <ExternalLink className="size-3.5 shrink-0 text-muted-foreground" />
-            </a>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
 function AssetRow({ asset, onClick }: { asset: Asset; onClick: () => void }) {
   const overdue = isOverdue(asset, new Date());
   return (
@@ -173,7 +140,7 @@ export function DetailPanel(props: PanelProps) {
   );
 }
 
-function CampaignPanel({ campaign, onSelect }: PanelProps) {
+function CampaignPanel({ campaign, canEdit, onSelect }: PanelProps) {
   const now = new Date();
   const rollup = rollupCampaign(campaign, now);
   const overdue = campaign.channels.flatMap((c) =>
@@ -240,7 +207,7 @@ function CampaignPanel({ campaign, onSelect }: PanelProps) {
           )}
         </section>
 
-        <LinkList links={campaign.links} />
+        <LinkManager links={campaign.links} target={{ campaignId: campaign.id }} canEdit={canEdit} />
       </div>
     </>
   );
@@ -372,6 +339,8 @@ function ChannelPanel({ campaign, options, canEdit, onSelect, channelId }: Panel
           )}
         </section>
 
+        <LinkManager links={channel.links} target={{ channelId: channel.id }} canEdit={canEdit} />
+
         {canEdit ? (
           <section>
             <SectionTitle>Kanal bearbeiten</SectionTitle>
@@ -395,7 +364,6 @@ function ChannelPanel({ campaign, options, canEdit, onSelect, channelId }: Panel
           </section>
         )}
 
-        <LinkList links={channel.links} />
       </div>
     </>
   );
@@ -512,6 +480,8 @@ function AssetPanel({ campaign, options, canEdit, onSelect, assetId }: PanelProp
           </section>
         )}
 
+        <LinkManager links={asset.links} target={{ assetId: asset.id }} canEdit={canEdit} />
+
         {canEdit && (
           <section>
             <SectionTitle>Asset bearbeiten</SectionTitle>
@@ -527,7 +497,6 @@ function AssetPanel({ campaign, options, canEdit, onSelect, assetId }: PanelProp
           </section>
         )}
 
-        <LinkList links={asset.links} />
       </div>
     </>
   );

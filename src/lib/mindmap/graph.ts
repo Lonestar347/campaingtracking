@@ -29,6 +29,7 @@ export interface MindmapAsset {
   status: string;
   dueDate: Date | null;
   owner: { name: string } | null;
+  links?: readonly unknown[];
 }
 
 export interface MindmapChannel {
@@ -38,6 +39,7 @@ export interface MindmapChannel {
   channelType: { name: string };
   owner: { name: string } | null;
   kpiTargets: unknown;
+  links?: readonly unknown[];
   assets: MindmapAsset[];
 }
 
@@ -83,6 +85,7 @@ export type ChannelNodeData = {
   trafficLight: TrafficLight;
   progress: Progress;
   kpiCount: number;
+  linkCount: number;
   childCount: number;
   collapsed: boolean;
 };
@@ -98,6 +101,7 @@ export type AssetNodeData = {
   ownerName: string | null;
   overdue: boolean;
   dueSoon: boolean;
+  linkCount: number;
 };
 
 export type MindmapNodeData = CampaignNodeData | StageNodeData | ChannelNodeData | AssetNodeData;
@@ -201,6 +205,7 @@ function buildTree(campaign: MindmapCampaign, options: BuildOptions): TreeNode {
           trafficLight: summary.trafficLight,
           progress: summary.progress,
           kpiCount: Object.keys(kpis).length,
+          linkCount: channel.links?.length ?? 0,
           childCount: channel.assets.length,
           collapsed: channelCollapsed,
         },
@@ -222,6 +227,7 @@ function buildTree(campaign: MindmapCampaign, options: BuildOptions): TreeNode {
                 ownerName: asset.owner?.name ?? null,
                 overdue: isOverdue(asset, now, config),
                 dueSoon: isDueSoonAndBehind(asset, now, config),
+                linkCount: asset.links?.length ?? 0,
               },
             })),
       };

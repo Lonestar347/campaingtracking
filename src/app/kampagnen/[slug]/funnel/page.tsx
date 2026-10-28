@@ -16,13 +16,8 @@ import { isDueSoonAndBehind, isOverdue, rollupCampaign, summarizeAssets } from "
 import { parseKpiTargets } from "@/lib/validation";
 import { ProgressBar, TrafficLightBadge } from "@/components/status-badges";
 import { STAGE_STYLES } from "@/components/stage-styles";
-
-const LINK_TYPE_LABELS: Record<string, string> = {
-  frontify: "Frontify",
-  sharepoint: "SharePoint",
-  looker_studio: "Looker Studio",
-  other: "Link",
-};
+import { LinkIcon } from "@/components/links/link-icon";
+import { LINK_TYPE_LABELS } from "@/lib/links";
 
 // Funnel view: channels per funnel stage in three columns. KPI actuals follow in phase 6.
 export default async function CampaignFunnelPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -44,7 +39,10 @@ export default async function CampaignFunnelPage({ params }: { params: Promise<{
                 rel="noreferrer"
                 className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-sm hover:bg-muted"
               >
-                <span className="text-xs font-semibold text-muted-foreground">{LINK_TYPE_LABELS[link.type]}</span>
+                <LinkIcon type={link.type} className="text-muted-foreground" />
+                <span className="text-xs font-semibold text-muted-foreground">
+                  {LINK_TYPE_LABELS[link.type as keyof typeof LINK_TYPE_LABELS] ?? link.type}
+                </span>
                 {link.label ?? link.url}
                 <ExternalLink className="size-3.5 text-muted-foreground" />
               </a>

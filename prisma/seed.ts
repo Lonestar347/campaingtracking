@@ -56,7 +56,7 @@ interface CampaignSeed {
   partners: string[];
   executionType: "agency" | "inhouse" | "mixed";
   charter: LaunchCharterData;
-  links: { type: "frontify" | "sharepoint" | "looker_studio"; url: string; label: string }[];
+  links: { type: "frontify" | "sharepoint" | "looker_studio"; url: string; label: string; embed?: boolean }[];
   channels: ChannelSeed[];
 }
 
@@ -113,7 +113,12 @@ const CAMPAIGNS: CampaignSeed[] = [
     links: [
       { type: "frontify", url: "https://example.frontify.com/folder/herbst-hund", label: "Frontify-Ordner" },
       { type: "sharepoint", url: "https://example.sharepoint.com/sites/marketing/herbst-hund", label: "SharePoint" },
-      { type: "looker_studio", url: "https://lookerstudio.google.com/reporting/example-herbst-hund", label: "Performance-Report" },
+      {
+        type: "looker_studio",
+        url: "https://lookerstudio.google.com/reporting/example-herbst-hund",
+        label: "Performance-Report",
+        embed: true,
+      },
     ],
     channels: [
       {

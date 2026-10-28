@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Handle, Position, type NodeProps, type Node } from "@xyflow/react";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Link2, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ASSET_TYPE_LABELS, CAMPAIGN_PHASE_LABELS, type AssetType, type TrafficLight } from "@/lib/domain/enums";
 import { formatDate, formatDateRange } from "@/lib/dates";
@@ -192,6 +192,12 @@ export function ChannelNode({ id, data, selected }: NodeProps<Node<ChannelNodeDa
         {data.typeName !== data.name ? `${data.typeName} · ` : ""}
         {data.ownerName ?? "Owner offen"}
         {data.kpiCount > 0 && ` · ${data.kpiCount} KPI`}
+        {data.linkCount > 0 && (
+          <span title={`${data.linkCount} Link(s)`}>
+            {" · "}
+            <Link2 className="inline size-3 align-[-2px]" aria-label="Links" /> {data.linkCount}
+          </span>
+        )}
       </p>
       <MiniProgress progress={data.progress} className="mt-1 pr-2" />
       <NodeControls id={id} collapsed={data.collapsed} childCount={data.childCount} addLabel="Asset hinzufügen" />
@@ -223,6 +229,11 @@ export function AssetNode({ data, selected }: NodeProps<Node<AssetNodeData>>) {
       </div>
       <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
         <span>{ASSET_TYPE_LABELS[data.assetType as AssetType] ?? data.assetType}</span>
+        {data.linkCount > 0 && (
+          <span className="inline-flex items-center gap-0.5" title={`${data.linkCount} Link(s)`}>
+            <Link2 className="size-3" aria-label="Links" /> {data.linkCount}
+          </span>
+        )}
         {data.dueDate && (
           <span
             className={cn(

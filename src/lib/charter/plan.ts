@@ -5,6 +5,7 @@
 import type { AssetType, FunnelStage, LinkType } from "@/lib/domain/enums";
 import type { LaunchCharterData } from "@/lib/validation";
 import type { CharterInput } from "@/lib/charter/form";
+import { toLookerEmbedUrl } from "@/lib/links";
 
 export const CHARTER_LINK_DEFS: readonly { key: keyof CharterInput["links"]; type: LinkType; label: string }[] = [
   { key: "frontify", type: "frontify", label: "Frontify-Ordner" },
@@ -53,7 +54,7 @@ export interface CampaignFields {
 export interface CampaignPlan {
   campaign: CampaignFields;
   charterData: LaunchCharterData;
-  links: { type: LinkType; url: string; label: string }[];
+  links: { type: LinkType; url: string; label: string; embed: boolean }[];
   channels: PlannedChannel[];
 }
 
@@ -115,7 +116,8 @@ export function buildCampaignPlan(input: CharterInput): CampaignPlan {
     charterData: charterDataFromInput(input),
     links: CHARTER_LINK_DEFS.flatMap(({ key, type, label }) => {
       const url = input.links[key];
-      return url ? [{ type, url, label }] : [];
+      // Looker Studio reports from the charter are embedded in the performance tab when possible.
+      return url ? [{ type, url, label, embed: type === "looker_studio" && toLookerEmbedUrl(url) != null }] : [];
     }),
     channels: input.channels.map((channel, channelIndex) => ({
       channelTypeId: channel.channelTypeId,
