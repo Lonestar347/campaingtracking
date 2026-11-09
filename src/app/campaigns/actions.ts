@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import type { Prisma } from "@prisma/client";
 import { requirePermission } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -20,6 +21,7 @@ import {
 } from "@/lib/charter/plan";
 import { launchCharterDataSchema } from "@/lib/validation";
 import { toLookerEmbedUrl } from "@/lib/links";
+import { storage } from "@/lib/storage";
 
 export type CharterActionResult =
   | { ok: true; slug: string; message?: string }
@@ -195,4 +197,48 @@ export async function updateCharter(slug: string, values: CharterFormValues): Pr
   revalidatePath("/");
   revalidatePath(`/campaigns/${slug}`, "layout");
   return { ok: true, slug };
+}
+
+/**
+ * Deletes a campaign with everything that belongs to it (channels, assets,
+ * charter, links, reports, creatives, comments, its activity log) and the
+ * stored files. Admins only; the name must be typed to confirm. A log entry
+ * without campaign records the deletion.
+ */
+export async function deleteCampaign(campaignId: string, confirmName: string): Promise<{ ok: false; error: string }> {
+  const auth = await requirePermission("manage");
+  if (!auth.user) return { ok: false, error: auth.error };
+  const campaign = await db.campaign.findUnique({
+    where: { id: campaignId },
+    include: {
+      kpiReports: { select: { storageKey: true } },
+      creatives: { select: { imageKey: true } },
+      _count: { select: { channels: true } },
+    },
+  });
+  if (!campaign) return { ok: false, error: "Campaign not found." };
+  if (confirmName.trim() !== campaign.name.trim()) {
+    return { ok: false, error: "The name does not match. Type the campaign name exactly to confirm." };
+  }
+
+  const files = [
+    ...campaign.kpiReports.map((r) => r.storageKey),
+    ...campaign.creatives.map((c) => c.imageKey).filter((k): k is string => !!k),
+  ];
+  await db.$transaction(async (tx) => {
+    await tx.campaign.delete({ where: { id: campaignId } });
+    await tx.activityLog.create({
+      data: {
+        entityType: "campaign",
+        entityId: campaignId,
+        action: "deleted",
+        details: { name: campaign.name, slug: campaign.slug, channels: campaign._count.channels },
+        userId: auth.user.id,
+      },
+    });
+  });
+  await Promise.all(files.map((key) => storage.delete(key).catch(() => undefined)));
+
+  revalidatePath("/", "layout");
+  redirect(`/?deleted=${encodeURIComponent(campaign.name)}`);
 }

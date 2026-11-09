@@ -3,7 +3,7 @@ import { buildGantt, buildTicks } from "@/lib/gantt";
 import { FUNNEL_STAGE_LABELS } from "@/lib/domain/enums";
 
 const d = (iso: string) => new Date(`${iso}T00:00:00Z`);
-const config = { dueSoonDays: 7, timeZone: "UTC" };
+const config = { dueSoonDays: 7, timeZone: "UTC", kpiGreenAt: 0.95, kpiYellowAt: 0.8 };
 
 const input = {
   startDate: d("2026-11-01"),

@@ -2,6 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { getCampaignBySlug } from "@/lib/queries";
+import { can, getCurrentUser } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { DeleteCampaignButton } from "@/components/delete-campaign-button";
 import { formatDateRange } from "@/lib/dates";
 import { rollupCampaign } from "@/lib/status";
 import { parseStringList } from "@/lib/validation";
@@ -22,9 +25,18 @@ export default async function CampaignLayout({
   children: React.ReactNode;
 }) {
   const { slug } = await params;
-  const campaign = await getCampaignBySlug(slug);
+  const [campaign, user] = await Promise.all([getCampaignBySlug(slug), getCurrentUser()]);
   if (!campaign) notFound();
   const rollup = rollupCampaign(campaign, new Date());
+  const canDelete = !!user && can(user.role, "manage");
+  const counts = canDelete
+    ? {
+        channels: campaign.channels.length,
+        assets: campaign.channels.reduce((n, c) => n + c.assets.length, 0),
+        creatives: await db.creative.count({ where: { campaignId: campaign.id } }),
+        reports: await db.kpiReport.count({ where: { campaignId: campaign.id } }),
+      }
+    : null;
 
   return (
     <div className="space-y-6">
@@ -39,6 +51,11 @@ export default async function CampaignLayout({
           <h1 className="text-2xl font-semibold tracking-tight">{campaign.name}</h1>
           <PhaseBadge value={rollup.campaign.phase} />
           <TrafficLightBadge value={rollup.campaign.trafficLight} />
+          {counts && (
+            <span className="ml-auto">
+              <DeleteCampaignButton campaignId={campaign.id} name={campaign.name} counts={counts} />
+            </span>
+          )}
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
           <span>{formatDateRange(campaign.startDate, campaign.endDate)}</span>

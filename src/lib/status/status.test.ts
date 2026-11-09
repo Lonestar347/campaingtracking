@@ -12,7 +12,7 @@ import type { StatusConfig } from "@/lib/config";
 
 // 28.10.2026, 10:00 in Berlin (CET, UTC+1)
 const NOW = new Date("2026-10-28T09:00:00Z");
-const config: StatusConfig = { dueSoonDays: 7, timeZone: "Europe/Berlin" };
+const config: StatusConfig = { dueSoonDays: 7, timeZone: "Europe/Berlin", kpiGreenAt: 0.95, kpiYellowAt: 0.8 };
 
 const day = (iso: string) => new Date(`${iso}T00:00:00Z`);
 const asset = (status: string, due: string | null): StatusAsset => ({

@@ -157,7 +157,7 @@ const CAMPAIGNS: CampaignSeed[] = [
       {
         type: "pos_retail",
         owner: "felix",
-        kpiTargets: { Placements: 300 },
+        kpiTargets: { Placements: 300, "Units sold": 12_000 },
         assets: [
           { title: "Shelf stopper", assetType: "PRINT", format: "A5", status: "DONE", due: -30, owner: "ben", approver: "felix" },
           { title: "Display stand", assetType: "PRINT", format: "Display 60x180", status: "LIVE", due: -22, owner: "ben", approver: "felix" },
@@ -375,9 +375,12 @@ const CREATIVES: Record<string, CreativeSeed[]> = {
 const slugifyTitle = (title: string) => title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
 async function main() {
-  // Uploaded creative images of the previous seed run.
+  // Uploaded files (creative images, report originals) of the previous seed run.
   for (const c of await db.creative.findMany({ where: { imageKey: { not: null } }, select: { imageKey: true } })) {
     await storage.delete(c.imageKey!).catch(() => undefined);
+  }
+  for (const r of await db.kpiReport.findMany({ select: { storageKey: true } })) {
+    await storage.delete(r.storageKey).catch(() => undefined);
   }
 
   // Wipe in dependency order.
@@ -522,6 +525,50 @@ async function main() {
         },
       });
     }
+  }
+
+  // An imported agency report for the running campaign: daily values from its start until yesterday,
+  // so the performance tab and the funnel show actuals (some KPIs on track, some behind).
+  {
+    const autumnCampaign = await db.campaign.findUniqueOrThrow({ where: { slug: "autumn-campaign-dog" }, include: { channels: true } });
+    const channelId = (name: string) => autumnCampaign.channels.find((c) => c.name === name)!.id;
+    const start = -20;
+    const daily: { channel: string; kpi: string; base: number; swing: number }[] = [
+      { channel: "CTV spot", kpi: "Impressions", base: 102_000, swing: 0.15 },
+      { channel: "CTV spot", kpi: "Completion rate %", base: 66, swing: 0.05 },
+      { channel: "Social Reach (Paid)", kpi: "Reach", base: 26_000, swing: 0.2 },
+      { channel: "Social Reach (Paid)", kpi: "CPM", base: 5.6, swing: 0.08 },
+      { channel: "Website/Advice Content", kpi: "Sessions", base: 560, swing: 0.25 },
+      { channel: "Website/Advice Content", kpi: "Time on page (s)", base: 84, swing: 0.1 },
+      { channel: "POS/Retail", kpi: "Units sold", base: 140, swing: 0.3 },
+    ];
+    const rows: { channel: string; kpi: string; value: number; date: Date }[] = [];
+    for (let offset = start; offset < 0; offset++) {
+      for (const [i, series] of daily.entries()) {
+        const wave = Math.sin((offset - start) * 0.9 + i * 1.7) * series.swing;
+        const value = series.base * (1 + wave);
+        rows.push({ channel: series.channel, kpi: series.kpi, value: series.base < 100 ? Math.round(value * 10) / 10 : Math.round(value), date: day(offset) });
+      }
+    }
+    rows.push({ channel: "POS/Retail", kpi: "Placements", value: 214, date: day(-10) });
+
+    const csv = ["Date,Channel,KPI,Value", ...rows.map((r) => `${r.date.toISOString().slice(0, 10)},${r.channel},${r.kpi},${r.value}`)].join("\n");
+    const storageKey = await storage.put(Buffer.from(csv, "utf8"), "sample-agency-daily.csv", `reports/${autumnCampaign.id}`);
+    await db.kpiReport.create({
+      data: {
+        campaignId: autumnCampaign.id,
+        source: "Sample Agency",
+        periodStart: day(start),
+        periodEnd: day(-1),
+        originalFileName: "sample-agency-daily.csv",
+        storageKey,
+        uploadedById: userId("david"),
+        uploadedAt: new Date(Date.now() - 20 * 3_600_000),
+        values: {
+          create: rows.map((r) => ({ channelId: channelId(r.channel), kpiName: r.kpi, value: r.value, date: r.date })),
+        },
+      },
+    });
   }
 
   // Comments and status changes so the team features have data.

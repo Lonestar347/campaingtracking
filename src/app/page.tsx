@@ -106,6 +106,7 @@ export default async function DashboardPage({
   const hrefForKpi = (kpi: string) => {
     const query = new URLSearchParams();
     for (const [key, value] of Object.entries(params)) {
+      if (key === "deleted") continue;
       for (const v of Array.isArray(value) ? value : value ? [value] : []) query.append(key, v);
     }
     query.set("kpi", kpi);
@@ -130,6 +131,12 @@ export default async function DashboardPage({
             </Link>
           )}
         </div>
+
+        {typeof params.deleted === "string" && (
+          <p className="rounded-xl border border-status-green bg-status-green/10 px-4 py-3 text-base" role="status">
+            Campaign “{params.deleted}” was deleted.
+          </p>
+        )}
 
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <Stat label="Campaigns" value={stats.campaigns} />

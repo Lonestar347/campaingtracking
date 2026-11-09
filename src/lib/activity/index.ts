@@ -128,7 +128,7 @@ export function describeActivity(entry: ActivityEntry, ctx: ActivityContext): De
   const channelName = ctx.channels.get(entityId) ?? str(d.name);
   const exists = (entityType === "asset" && ctx.assets.has(entityId)) || (entityType === "channel" && ctx.channels.has(entityId));
   const target: ActivityTarget | null =
-    entityType === "campaign" || entityType === "charter"
+    (entityType === "campaign" || entityType === "charter") && !(entityType === "campaign" && action === "deleted")
       ? { kind: "campaign", id: entityId }
       : entityType === "creative"
         ? action === "deleted"
@@ -197,6 +197,14 @@ export function describeActivity(entry: ActivityEntry, ctx: ActivityContext): De
       return result(`updated asset ${objectName}: ${describeChanges(d.changes, ctx)}`);
     case "asset:deleted":
       return result(`deleted asset ${objectName}`);
+    case "campaign:deleted": {
+      const extra = typeof d.channels === "number" ? ` with ${plural(d.channels, "channel")}` : "";
+      return result(`deleted the campaign ${quote(str(d.name), "")}${extra}`.replace("  ", " "));
+    }
+    case "campaign:headline_kpis_changed": {
+      const kpis = Array.isArray(d.kpis) ? d.kpis.filter((k) => typeof k === "string") : [];
+      return result(kpis.length > 0 ? `chose the key KPIs ${kpis.map((k) => `“${k}”`).join(", ")}` : "reset the key KPIs to automatic");
+    }
     case "creative:created":
       return result(`added creative ${objectName}`);
     case "creative:updated":

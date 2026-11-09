@@ -18,7 +18,7 @@ import {
 import type { StatusConfig } from "@/lib/config";
 
 const NOW = new Date("2026-10-28T09:00:00Z");
-const config: StatusConfig = { dueSoonDays: 7, timeZone: "Europe/Berlin" };
+const config: StatusConfig = { dueSoonDays: 7, timeZone: "Europe/Berlin", kpiGreenAt: 0.95, kpiYellowAt: 0.8 };
 const day = (iso: string) => new Date(`${iso}T00:00:00Z`);
 
 function campaign(partial: Partial<DashboardCampaign> & { slug: string }): DashboardCampaign {

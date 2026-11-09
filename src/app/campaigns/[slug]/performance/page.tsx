@@ -15,6 +15,9 @@ import { STAGE_STYLES } from "@/components/stage-styles";
 import { LinkIcon } from "@/components/links/link-icon";
 import { AchievementChart, type AchievementRow } from "@/components/kpi-import/achievement-chart";
 import { DeleteReportButton } from "@/components/kpi-import/delete-report-button";
+import { campaignKpis, kpiPace, resolveHeadlineKpis } from "@/lib/kpi";
+import { HeadlineKpiCard } from "@/components/performance/headline-kpis";
+import { HeadlineKpiPicker } from "@/components/performance/headline-kpi-picker";
 
 function achievementText(kpi: KpiActual): React.ReactNode {
   if (kpi.achievement == null) return <span className="text-muted-foreground">–</span>;
@@ -73,6 +76,10 @@ export default async function PerformancePage({
     ...campaign.channels.flatMap((channel) => channel.links.map((link) => ({ link, scope: channel.name }))),
   ].filter(({ link }) => link.type === "looker_studio");
 
+  const now = new Date();
+  const allKpis = campaignKpis(campaign, values);
+  const headline = resolveHeadlineKpis(campaign.headlineKpis, allKpis);
+
   const imported = Number(query.imported);
   const creativeValues = Number(query.creatives);
 
@@ -94,6 +101,46 @@ export default async function PerformancePage({
         </p>
       )}
 
+      <section aria-labelledby="key-kpis-title" className="space-y-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 id="key-kpis-title" className="text-xl font-semibold">
+              Key KPIs
+            </h2>
+            <p className="text-base text-muted-foreground">
+              Counts are rated against the plan for the elapsed period, rates against their target.{" "}
+              {headline.custom ? "Chosen for this campaign." : "Chosen automatically: the main KPI of each funnel stage."}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {canEdit && (
+              <HeadlineKpiPicker
+                campaignId={campaign.id}
+                options={allKpis.map((k) => k.kpiName)}
+                selected={headline.kpis.map((k) => k.kpiName)}
+                custom={headline.custom}
+              />
+            )}
+            {canEdit && (
+              <Link href={`/campaigns/${slug}/performance/import`} className={buttonVariants({ variant: "accent" })}>
+                <Upload /> Import report
+              </Link>
+            )}
+          </div>
+        </div>
+        {headline.kpis.length === 0 ? (
+          <p className="rounded-2xl border bg-card p-6 text-base text-muted-foreground">
+            No KPIs yet. Set KPI targets on the channels and import reports to see the key KPIs here.
+          </p>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-3">
+            {headline.kpis.map((kpi) => (
+              <HeadlineKpiCard key={kpi.kpiName} kpi={kpi} pace={kpiPace(kpi, now)} />
+            ))}
+          </div>
+        )}
+      </section>
+
       <section aria-labelledby="kpi-title" className="space-y-4">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
@@ -105,11 +152,6 @@ export default async function PerformancePage({
               averaged. For cost KPIs, lower is better.
             </p>
           </div>
-          {canEdit && (
-            <Link href={`/campaigns/${slug}/performance/import`} className={buttonVariants({ variant: "accent" })}>
-              <Upload /> Import report
-            </Link>
-          )}
         </div>
 
         {chartRows.length > 0 && (

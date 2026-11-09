@@ -275,6 +275,24 @@ src/
 - Schema: new `Creative`, `KpiValue.creativeId` – run `npm run db:push` after updating (or
   `npm run db:reset` for fresh sample data). With Docker the schema is updated on start.
 
+### Performance dashboard, graphical funnel, deleting campaigns ✅
+
+- Campaign tabs: Mind map, Performance, Funnel, Launch charter, Creatives, Activity
+- **Key KPIs** at the top of the performance tab: three large cards with actual, target, progress,
+  traffic light and a small trend chart. Counts are rated against the plan for the elapsed KPI period
+  (linear, up to the latest reported day), rates and cost KPIs against their target. Thresholds:
+  green from 95 %, yellow from 80 % of plan (`src/lib/config.ts`). By default the main KPI of each
+  funnel stage is shown; editors can choose other KPIs ("Choose key KPIs") or go back to automatic
+- **Funnel tab** as a funnel: Awareness → Consideration → Sales one after another with the main KPI of
+  each stage, its traffic light and the conversion to the next stage (e.g. sessions per impression,
+  actual vs. target). Below, the channels feeding each stage with KPI bars (actual vs. target, plan
+  marker) and their deadline status
+- **Delete campaign** (admins only, in the campaign header): confirm by typing the name; removes
+  the campaign with charter, channels, assets, links, reports, creatives, comments and history, plus
+  the uploaded files. A log entry ("… deleted the campaign …") stays in "Recent activity"
+- Seed: an imported daily agency report for “Autumn Campaign Dog”, so the KPI views have data
+- Schema: `Campaign.headlineKpis` – run `npm run db:push` after updating (or `npm run db:reset`)
+
 ### Next
 
 Later (phase 8): Microsoft SSO (Auth.js + Entra ID), PostgreSQL on the server, timeline/Gantt

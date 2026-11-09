@@ -53,6 +53,7 @@ model Campaign {
   ownerId       String
   partners      Json // string[]: agencies / production partners
   executionType String // agency | inhouse | mixed
+  headlineKpis  Json? // string[]: KPI names shown as headline KPIs (null = automatic choice)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

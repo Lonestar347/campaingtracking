@@ -9,10 +9,10 @@ export function CampaignTabs({ slug }: { slug: string }) {
   const base = `/campaigns/${slug}`;
   const tabs = [
     { href: base, label: "Mind map", active: pathname === base },
+    { href: `${base}/performance`, label: "Performance", active: pathname.startsWith(`${base}/performance`) },
     { href: `${base}/funnel`, label: "Funnel", active: pathname === `${base}/funnel` },
     { href: `${base}/charter`, label: "Launch charter", active: pathname.startsWith(`${base}/charter`) },
     { href: `${base}/creatives`, label: "Creatives", active: pathname === `${base}/creatives` },
-    { href: `${base}/performance`, label: "Performance", active: pathname.startsWith(`${base}/performance`) },
     { href: `${base}/activity`, label: "Activity", active: pathname === `${base}/activity` },
   ];
   return (

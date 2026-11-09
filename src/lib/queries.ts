@@ -85,7 +85,7 @@ export async function getCampaignReports(campaignId: string) {
     }),
     db.kpiValue.findMany({
       where: { report: { campaignId } },
-      select: { channelId: true, kpiName: true, value: true },
+      select: { channelId: true, kpiName: true, value: true, date: true },
     }),
   ]);
   return { reports, values };
@@ -107,7 +107,8 @@ export async function getCampaignActivity(campaignId: string, take = 300) {
 /** Latest activity across all campaigns (dashboard). */
 export async function getRecentActivity(take = 8) {
   return db.activityLog.findMany({
-    where: { campaignId: { not: null } },
+    // Deleted campaigns keep a log entry without campaign.
+    where: { OR: [{ campaignId: { not: null } }, { entityType: "campaign", action: "deleted" }] },
     orderBy: { createdAt: "desc" },
     take,
     include: { ...activityInclude, campaign: { select: { name: true, slug: true } } },
