@@ -82,6 +82,7 @@ describe("asset form", () => {
       format: "9:16",
       status: "APPROVAL",
       dueDate: new Date("2026-11-20T00:00:00Z"),
+      goLiveDate: new Date("2026-11-24T00:00:00Z"),
       ownerId: "u1",
       approverId: null,
       notes: "Please review",

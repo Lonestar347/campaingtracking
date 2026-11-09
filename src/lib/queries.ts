@@ -1,5 +1,7 @@
 import { cache } from "react";
 import { db } from "@/lib/db";
+import { ASSET_TYPES, type AssetType, type FunnelStage } from "@/lib/domain/enums";
+import { DEFAULT_BENCHMARKS, DEFAULT_LEAD_TIMES, EMPTY_BENCHMARK, type LeadTime } from "@/lib/planning/defaults";
 
 /** Campaign with everything the campaign pages need. Cached per request. */
 export const getCampaignBySlug = cache(async (slug: string) => {
@@ -101,7 +103,12 @@ export async function getCampaignComments(campaignId: string) {
 
 /** Activity log of a campaign, newest first. */
 export async function getCampaignActivity(campaignId: string, take = 300) {
-  return db.activityLog.findMany({ where: { campaignId }, orderBy: { createdAt: "desc" }, take, include: activityInclude });
+  return db.activityLog.findMany({
+    where: { campaignId },
+    orderBy: { createdAt: "desc" },
+    take,
+    include: activityInclude,
+  });
 }
 
 /** Latest activity across all campaigns (dashboard). */
@@ -161,3 +168,44 @@ export async function getAllCreatives() {
     },
   });
 }
+
+/** Planning master data: benchmarks per channel type and lead times per asset type, with defaults for missing rows. */
+export async function getPlanningMasterData() {
+  const [channelTypes, leadTimeRows] = await Promise.all([
+    db.channelType.findMany({ orderBy: { sortOrder: "asc" }, include: { benchmark: true } }),
+    db.assetLeadTime.findMany(),
+  ]);
+  const benchmarks = channelTypes.map((t) => {
+    const fallback = DEFAULT_BENCHMARKS[t.key] ?? EMPTY_BENCHMARK;
+    const b = t.benchmark;
+    return {
+      channelTypeId: t.id,
+      key: t.key,
+      name: t.name,
+      stage: t.defaultFunnelStage as FunnelStage,
+      active: t.active,
+      values: b
+        ? {
+            cpm: b.cpm,
+            frequency: b.frequency,
+            rateToNext: b.rateToNext,
+            costPerAction: b.costPerAction,
+            avgOrderValue: b.avgOrderValue,
+          }
+        : fallback,
+    };
+  });
+  const stored = new Map(leadTimeRows.map((r) => [r.assetType, r]));
+  const leadTimes = Object.fromEntries(
+    ASSET_TYPES.map((type) => {
+      const row = stored.get(type);
+      const value: LeadTime = row
+        ? { briefingDays: row.briefingDays, productionDays: row.productionDays, approvalDays: row.approvalDays }
+        : DEFAULT_LEAD_TIMES[type];
+      return [type, value];
+    }),
+  ) as Record<AssetType, LeadTime>;
+  return { benchmarks, leadTimes };
+}
+
+export type PlanningMasterData = Awaited<ReturnType<typeof getPlanningMasterData>>;

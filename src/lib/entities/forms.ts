@@ -47,7 +47,9 @@ export const channelEditSchema = z
 
 export type ChannelEditInput = z.output<typeof channelEditSchema>;
 
-export function emptyChannelForm(defaults: { funnelStage?: FunnelStage; channelTypeId?: string; name?: string } = {}): ChannelEditValues {
+export function emptyChannelForm(
+  defaults: { funnelStage?: FunnelStage; channelTypeId?: string; name?: string } = {},
+): ChannelEditValues {
   return {
     channelTypeId: defaults.channelTypeId ?? "",
     name: defaults.name ?? "",
@@ -109,6 +111,7 @@ export interface AssetEditValues {
   format: string;
   status: string;
   dueDate: string;
+  goLiveDate: string;
   ownerId: string;
   approverId: string;
   notes: string;
@@ -120,6 +123,7 @@ export const assetEditSchema = z.object({
   format: optionalText,
   status: z.enum(ASSET_STATUSES, { errorMap: () => ({ message: "Select a status" }) }),
   dueDate: dateField(false),
+  goLiveDate: dateField(false),
   ownerId: optionalId,
   approverId: optionalId,
   notes: optionalText,
@@ -128,7 +132,17 @@ export const assetEditSchema = z.object({
 export type AssetEditInput = z.output<typeof assetEditSchema>;
 
 export function emptyAssetForm(): AssetEditValues {
-  return { title: "", assetType: "", format: "", status: "IDEA", dueDate: "", ownerId: "", approverId: "", notes: "" };
+  return {
+    title: "",
+    assetType: "",
+    format: "",
+    status: "IDEA",
+    dueDate: "",
+    goLiveDate: "",
+    ownerId: "",
+    approverId: "",
+    notes: "",
+  };
 }
 
 export function assetFormFromRecord(asset: {
@@ -137,6 +151,7 @@ export function assetFormFromRecord(asset: {
   format: string | null;
   status: string;
   dueDate: Date | null;
+  goLiveDate?: Date | null;
   ownerId: string | null;
   approverId: string | null;
   notes: string | null;
@@ -147,6 +162,7 @@ export function assetFormFromRecord(asset: {
     format: asset.format ?? "",
     status: asset.status,
     dueDate: toDateInput(asset.dueDate),
+    goLiveDate: toDateInput(asset.goLiveDate ?? null),
     ownerId: asset.ownerId ?? "",
     approverId: asset.approverId ?? "",
     notes: asset.notes ?? "",
@@ -160,6 +176,7 @@ export function assetDataFromInput(input: AssetEditInput) {
     format: input.format ?? null,
     status: input.status,
     dueDate: input.dueDate ?? null,
+    goLiveDate: input.goLiveDate ?? null,
     ownerId: input.ownerId ?? null,
     approverId: input.approverId ?? null,
     notes: input.notes ?? null,
@@ -174,7 +191,9 @@ export function validate<T extends z.ZodTypeAny>(
   values: unknown,
 ): { success: true; data: z.output<T> } | { success: false; errors: FieldErrors } {
   const result = schema.safeParse(values);
-  return result.success ? { success: true, data: result.data } : { success: false, errors: toFieldErrors(result.error) };
+  return result.success
+    ? { success: true, data: result.data }
+    : { success: false, errors: toFieldErrors(result.error) };
 }
 
 export interface FieldChange {

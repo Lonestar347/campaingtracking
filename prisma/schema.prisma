@@ -54,6 +54,7 @@ model Campaign {
   partners      Json // string[]: agencies / production partners
   executionType String // agency | inhouse | mixed
   headlineKpis  Json? // string[]: KPI names shown as headline KPIs (null = automatic choice)
+  reversePlan   Json? // inputs of the reverse planning (goal, rates, channel shares, overrides)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -109,7 +110,32 @@ model ChannelType {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
-  channels Channel[]
+  channels  Channel[]
+  benchmark ChannelBenchmark?
+}
+
+// Planning benchmarks per channel type (maintained by admins, overridable per plan).
+// Which values matter depends on the funnel stage of the channel.
+model ChannelBenchmark {
+  id            String   @id @default(cuid())
+  channelTypeId String   @unique
+  cpm           Float? // awareness: EUR per 1,000 impressions
+  frequency     Float? // awareness: impressions per person reached
+  rateToNext    Float? // % moving on to the next stage (impressions -> sessions, sessions -> sales)
+  costPerAction Float? // consideration: EUR per session/click
+  avgOrderValue Float? // sales: EUR per sale
+  updatedAt     DateTime @updatedAt
+
+  channelType ChannelType @relation(fields: [channelTypeId], references: [id], onDelete: Cascade)
+}
+
+// Lead times per asset type for the backward schedule (in calendar days).
+model AssetLeadTime {
+  assetType      String   @id // VIDEO | STATIC | ...
+  briefingDays   Int
+  productionDays Int
+  approvalDays   Int
+  updatedAt      DateTime @updatedAt
 }
 
 model Channel {
@@ -147,6 +173,7 @@ model Asset {
   format     String? // format / specs, e.g. "9:16, 15s"
   status     String    @default("IDEA")
   dueDate    DateTime?
+  goLiveDate DateTime? // publication date; empty = channel start (backward schedule)
   ownerId    String?
   approverId String?
   notes      String?

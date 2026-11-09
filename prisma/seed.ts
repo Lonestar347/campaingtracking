@@ -13,6 +13,7 @@ import type { AssetStatus, AssetType, FunnelStage } from "../src/lib/domain/enum
 import { launchCharterDataSchema, type LaunchCharterData } from "../src/lib/validation";
 import { storage } from "../src/lib/storage";
 import { renderVisual, type VisualSpec } from "./seed-images";
+import { DEFAULT_BENCHMARKS, DEFAULT_LEAD_TIMES } from "../src/lib/planning/defaults";
 
 const db = new PrismaClient();
 
@@ -28,6 +29,7 @@ interface AssetSeed {
   format?: string;
   status: AssetStatus;
   due?: number;
+  goLive?: number;
   owner?: string;
   approver?: string;
 }
@@ -142,7 +144,7 @@ const CAMPAIGNS: CampaignSeed[] = [
         assets: [
           { title: "Reel 9:16 – coat", assetType: "VIDEO", format: "9:16, 15s", status: "LIVE", due: -18, owner: "david", approver: "anna" },
           { title: "Carousel ingredients", assetType: "CAROUSEL", format: "1:1, 5 slides", status: "IN_PRODUCTION", due: -3, owner: "ben", approver: "anna" },
-          { title: "Story set week 4", assetType: "STORY", format: "9:16", status: "BRIEFING", due: 12, owner: "david" },
+          { title: "Story set week 4", assetType: "STORY", format: "9:16", status: "BRIEFING", due: 12, goLive: 16, owner: "david" },
         ],
       },
       {
@@ -150,7 +152,7 @@ const CAMPAIGNS: CampaignSeed[] = [
         owner: "clara",
         kpiTargets: { Sessions: 40_000, "Time on page (s)": 90 },
         assets: [
-          { title: "Guide: coat care through nutrition", assetType: "TEXT", status: "APPROVAL", due: 3, owner: "clara", approver: "anna" },
+          { title: "Guide: coat care through nutrition", assetType: "TEXT", status: "APPROVAL", due: 3, goLive: 6, owner: "clara", approver: "anna" },
           { title: "Landing page header", assetType: "STATIC", format: "1920x600", status: "DONE", due: -21, owner: "ben" },
         ],
       },
@@ -396,6 +398,8 @@ async function main() {
   await db.launchCharterVersion.deleteMany();
   await db.launchCharter.deleteMany();
   await db.campaign.deleteMany();
+  await db.channelBenchmark.deleteMany();
+  await db.assetLeadTime.deleteMany();
   await db.channelType.deleteMany();
   await db.user.deleteMany();
 
@@ -403,6 +407,12 @@ async function main() {
   for (const [index, ct] of DEFAULT_CHANNEL_TYPES.entries()) {
     const created = await db.channelType.create({ data: { ...ct, sortOrder: index } });
     channelTypes.set(ct.key, created);
+    const benchmark = DEFAULT_BENCHMARKS[ct.key];
+    if (benchmark) await db.channelBenchmark.create({ data: { channelTypeId: created.id, ...benchmark } });
+  }
+
+  for (const [assetType, leadTime] of Object.entries(DEFAULT_LEAD_TIMES)) {
+    await db.assetLeadTime.create({ data: { assetType, ...leadTime } });
   }
 
   const users = new Map<UserKey, string>();
@@ -493,6 +503,7 @@ async function main() {
               format: a.format,
               status: a.status,
               dueDate: a.due != null ? day(a.due) : null,
+              goLiveDate: a.goLive != null ? day(a.goLive) : null,
               ownerId: userId(a.owner),
               approverId: userId(a.approver),
               sortOrder: aIndex,

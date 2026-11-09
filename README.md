@@ -293,6 +293,27 @@ src/
 - Seed: an imported daily agency report for “Autumn Campaign Dog”, so the KPI views have data
 - Schema: `Campaign.headlineKpis` – run `npm run db:push` after updating (or `npm run db:reset`)
 
+### Reverse planning ✅
+
+- New campaign tab **Planning** (after Funnel) with two parts:
+  - **KPIs backwards from the goal:** enter units sold or a revenue goal; the funnel rates
+    (consideration → sales, awareness → consideration) and the average order value come from the
+    channel benchmarks (weighted by channel share) or can be overridden. Result: sessions,
+    impressions and people reached that it takes, split across the campaign's channels by share,
+    plus the media budget (CPM, cost per session) compared with the campaign budget ("covers 46 % –
+    about 3,065 units"). "Apply as KPI targets" writes Impressions, Reach, Sessions, Units sold and
+    Revenue into the channels (other targets stay); the plan is saved with the campaign
+  - **Schedule backwards from go-live:** per asset the latest dates for briefing, production and
+    approval and the "ready by" date, from the asset's go-live (new optional field, else the channel
+    start) minus a buffer and the lead times per asset type; a timeline per asset, delays flagged
+    by status ("Production should have started"); "Set due dates" takes over the dates
+- **Settings → Benchmarks:** benchmarks per channel type (CPM, frequency, impression → session,
+  cost per session, session → sale, average order value) and lead times per asset type. Admins
+  edit, everyone can view. The starting values are rough, illustrative assumptions
+- Funnel/headline KPIs: money KPIs (revenue, budget) are no longer used as a stage's main KPI
+- Schema: `ChannelBenchmark`, `AssetLeadTime`, `Campaign.reversePlan`, `Asset.goLiveDate` – run
+  `npm run db:push` after updating (or `npm run db:reset`). Without stored rows the defaults apply
+
 ### Next
 
 Later (phase 8): Microsoft SSO (Auth.js + Entra ID), PostgreSQL on the server, timeline/Gantt

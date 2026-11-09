@@ -217,7 +217,12 @@ export function ChannelForm({
         </Field>
       )}
       <Field label="Name" htmlFor="ch-name" required error={errors.name}>
-        <Input id="ch-name" value={values.name} onChange={(e) => set("name", e.target.value)} aria-invalid={!!errors.name} />
+        <Input
+          id="ch-name"
+          value={values.name}
+          onChange={(e) => set("name", e.target.value)}
+          aria-invalid={!!errors.name}
+        />
       </Field>
       <div className="grid grid-cols-2 gap-3">
         <Field label="Funnel stage" htmlFor="ch-stage" required error={errors.funnelStage}>
@@ -239,7 +244,12 @@ export function ChannelForm({
           <UserSelect id="ch-owner" value={values.ownerId} onChange={(v) => set("ownerId", v)} options={options} />
         </Field>
         <Field label="Start" htmlFor="ch-start" error={errors.startDate}>
-          <Input id="ch-start" type="date" value={values.startDate} onChange={(e) => set("startDate", e.target.value)} />
+          <Input
+            id="ch-start"
+            type="date"
+            value={values.startDate}
+            onChange={(e) => set("startDate", e.target.value)}
+          />
         </Field>
         <Field label="End" htmlFor="ch-end" error={errors.endDate}>
           <Input
@@ -280,7 +290,12 @@ export function ChannelForm({
                 variant="ghost"
                 size="icon"
                 aria-label="Remove KPI"
-                onClick={() => set("kpis", values.kpis.filter((_, i) => i !== index))}
+                onClick={() =>
+                  set(
+                    "kpis",
+                    values.kpis.filter((_, i) => i !== index),
+                  )
+                }
               >
                 <Trash2 />
               </Button>
@@ -332,7 +347,12 @@ export function AssetForm({
   onCancel?: () => void;
   onDelete?: () => void;
 }) {
-  const { values, set, errors, formError, pending, onSubmit } = useEntityForm(initial, assetEditSchema, submit, onSaved);
+  const { values, set, errors, formError, pending, onSubmit } = useEntityForm(
+    initial,
+    assetEditSchema,
+    submit,
+    onSaved,
+  );
 
   return (
     <form onSubmit={onSubmit} className="space-y-4" noValidate>
@@ -381,11 +401,24 @@ export function AssetForm({
         <Field label="Due date" htmlFor="as-due" error={errors.dueDate}>
           <Input id="as-due" type="date" value={values.dueDate} onChange={(e) => set("dueDate", e.target.value)} />
         </Field>
+        <Field label="Go-live" htmlFor="as-golive" error={errors.goLiveDate} hint="Empty = channel start">
+          <Input
+            id="as-golive"
+            type="date"
+            value={values.goLiveDate}
+            onChange={(e) => set("goLiveDate", e.target.value)}
+          />
+        </Field>
         <Field label="Owner" htmlFor="as-owner" error={errors.ownerId}>
           <UserSelect id="as-owner" value={values.ownerId} onChange={(v) => set("ownerId", v)} options={options} />
         </Field>
         <Field label="Approver" htmlFor="as-approver" error={errors.approverId} className="col-span-2">
-          <UserSelect id="as-approver" value={values.approverId} onChange={(v) => set("approverId", v)} options={options} />
+          <UserSelect
+            id="as-approver"
+            value={values.approverId}
+            onChange={(v) => set("approverId", v)}
+            options={options}
+          />
         </Field>
       </div>
       <Field label="Notes" htmlFor="as-notes">

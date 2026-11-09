@@ -216,9 +216,12 @@ export function kpiPace(kpi: CampaignKpi, now: Date, config: StatusConfig = stat
 
 export const HEADLINE_COUNT = 3;
 
+/** Money amounts (revenue, budget, spend) are not volumes of people or actions. */
+const MONEY_KPI = /(revenue|umsatz|turnover|sales value|budget|spend|€|eur\b)/i;
+
 /** The main volume KPI of a list: the count KPI with the largest target (else the largest actual). */
 export function leadKpi(kpis: readonly CampaignKpi[]): CampaignKpi | null {
-  const counts = kpis.filter((k) => k.aggregation === "sum" && !k.lowerIsBetter);
+  const counts = kpis.filter((k) => k.aggregation === "sum" && !k.lowerIsBetter && !MONEY_KPI.test(k.kpiName));
   const withTarget = counts.filter((k) => k.target != null);
   if (withTarget.length > 0) return withTarget.reduce((a, b) => (b.target! > a.target! ? b : a));
   const withActual = counts.filter((k) => k.actual != null);

@@ -70,6 +70,7 @@ const FIELD_LABELS: Record<string, string> = {
   format: "format",
   status: "status",
   dueDate: "due date",
+  goLiveDate: "go-live",
   ownerId: "owner",
   approverId: "approver",
   notes: "notes",
@@ -91,7 +92,10 @@ function formatValue(field: string, value: unknown, ctx: ActivityContext): strin
   if (field === "status") return ASSET_STATUS_LABELS[value as AssetStatus] ?? String(value);
   if (field === "assetType") return ASSET_TYPE_LABELS[value as AssetType] ?? String(value);
   if (field === "funnelStage") return FUNNEL_STAGE_LABELS[value as FunnelStage] ?? String(value);
-  if ((field === "dueDate" || field === "startDate" || field === "endDate") && typeof value === "string") {
+  if (
+    (field === "dueDate" || field === "goLiveDate" || field === "startDate" || field === "endDate") &&
+    typeof value === "string"
+  ) {
     return formatDate(new Date(`${value.slice(0, 10)}T00:00:00Z`));
   }
   return String(value);
@@ -126,7 +130,8 @@ export function describeActivity(entry: ActivityEntry, ctx: ActivityContext): De
 
   const assetName = ctx.assets.get(entityId) ?? str(d.title);
   const channelName = ctx.channels.get(entityId) ?? str(d.name);
-  const exists = (entityType === "asset" && ctx.assets.has(entityId)) || (entityType === "channel" && ctx.channels.has(entityId));
+  const exists =
+    (entityType === "asset" && ctx.assets.has(entityId)) || (entityType === "channel" && ctx.channels.has(entityId));
   const target: ActivityTarget | null =
     (entityType === "campaign" || entityType === "charter") && !(entityType === "campaign" && action === "deleted")
       ? { kind: "campaign", id: entityId }
@@ -161,7 +166,8 @@ export function describeActivity(entry: ActivityEntry, ctx: ActivityContext): De
     case "campaign:created": {
       const channels = typeof d.channels === "number" ? d.channels : null;
       const assets = typeof d.assets === "number" ? d.assets : null;
-      const extra = channels != null && assets != null ? ` (${plural(channels, "channel")}, ${plural(assets, "asset")})` : "";
+      const extra =
+        channels != null && assets != null ? ` (${plural(channels, "channel")}, ${plural(assets, "asset")})` : "";
       return result(`created the campaign via the launch charter${extra}`);
     }
     case "charter:charter_updated": {
@@ -201,9 +207,15 @@ export function describeActivity(entry: ActivityEntry, ctx: ActivityContext): De
       const extra = typeof d.channels === "number" ? ` with ${plural(d.channels, "channel")}` : "";
       return result(`deleted the campaign ${quote(str(d.name), "")}${extra}`.replace("  ", " "));
     }
+    case "campaign:reverse_plan_saved":
+      return result("saved the reverse planning");
     case "campaign:headline_kpis_changed": {
       const kpis = Array.isArray(d.kpis) ? d.kpis.filter((k) => typeof k === "string") : [];
-      return result(kpis.length > 0 ? `chose the key KPIs ${kpis.map((k) => `“${k}”`).join(", ")}` : "reset the key KPIs to automatic");
+      return result(
+        kpis.length > 0
+          ? `chose the key KPIs ${kpis.map((k) => `“${k}”`).join(", ")}`
+          : "reset the key KPIs to automatic",
+      );
     }
     case "creative:created":
       return result(`added creative ${objectName}`);
@@ -219,7 +231,9 @@ export function describeActivity(entry: ActivityEntry, ctx: ActivityContext): De
       return result(`deleted creative ${objectName}`);
     case "kpi_report:imported": {
       const values = typeof d.values === "number" ? ` (${plural(d.values, "value")})` : "";
-      return result(`imported report ${quote(str(d.fileName), "a report")}${str(d.source) ? ` from ${d.source}` : ""}${values}`);
+      return result(
+        `imported report ${quote(str(d.fileName), "a report")}${str(d.source) ? ` from ${d.source}` : ""}${values}`,
+      );
     }
     case "kpi_report:deleted":
       return result(`deleted report ${quote(str(d.fileName), "a report")}${str(d.source) ? ` from ${d.source}` : ""}`);
@@ -264,13 +278,20 @@ export type TimelineItem =
 /** Activity entries and comments, newest first. */
 export function mergeTimeline(entries: readonly ActivityEntry[], comments: readonly CommentEntry[]): TimelineItem[] {
   return [
-    ...entries.map((entry): TimelineItem => ({ kind: "activity", id: `a:${entry.id}`, createdAt: entry.createdAt, entry })),
-    ...comments.map((comment): TimelineItem => ({ kind: "comment", id: `c:${comment.id}`, createdAt: comment.createdAt, comment })),
+    ...entries.map(
+      (entry): TimelineItem => ({ kind: "activity", id: `a:${entry.id}`, createdAt: entry.createdAt, entry }),
+    ),
+    ...comments.map(
+      (comment): TimelineItem => ({ kind: "comment", id: `c:${comment.id}`, createdAt: comment.createdAt, comment }),
+    ),
   ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime() || a.id.localeCompare(b.id));
 }
 
 /** Groups (already sorted) items by calendar day: "Today", "Yesterday", then the date. */
-export function groupByDay<T extends { createdAt: Date }>(items: readonly T[], now: Date = new Date()): { label: string; items: T[] }[] {
+export function groupByDay<T extends { createdAt: Date }>(
+  items: readonly T[],
+  now: Date = new Date(),
+): { label: string; items: T[] }[] {
   const today = toDayNumber(now, statusConfig.timeZone);
   const groups: { key: number; label: string; items: T[] }[] = [];
   for (const item of items) {
@@ -293,7 +314,9 @@ export function entriesFor<T extends { entityType: string; entityId: string }>(
   id: string,
 ): T[] {
   if (kind === "campaign") {
-    return items.filter((i) => i.entityType === "campaign" || i.entityType === "charter" || i.entityType === "kpi_report");
+    return items.filter(
+      (i) => i.entityType === "campaign" || i.entityType === "charter" || i.entityType === "kpi_report",
+    );
   }
   return items.filter((i) => i.entityType === kind && i.entityId === id);
 }

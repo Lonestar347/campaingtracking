@@ -120,6 +120,17 @@ describe("headline KPIs", () => {
   });
 });
 
+describe("leadKpi", () => {
+  it("ignores money KPIs such as revenue", () => {
+    const withRevenue = campaignKpis(
+      { ...campaign, channels: [{ id: "pos", funnelStage: "SALES", startDate: null, endDate: null, kpiTargets: { "Units sold": 300, Revenue: 9000 } }] },
+      [],
+      config,
+    );
+    expect(stageFlow(withRevenue).stages[2].lead?.kpiName).toBe("Units sold");
+  });
+});
+
 describe("stageFlow", () => {
   it("links the lead KPIs of consecutive stages", () => {
     const flow = stageFlow(kpis);
