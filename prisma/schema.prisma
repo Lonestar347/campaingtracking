@@ -124,6 +124,7 @@ model ChannelBenchmark {
   rateToNext    Float? // % moving on to the next stage (impressions -> sessions, sessions -> sales)
   costPerAction Float? // consideration: EUR per session/click
   avgOrderValue Float? // sales: EUR per sale
+  extraKpis     Json? // additional KPIs as % of the stage volume: { name, rate }[]
   updatedAt     DateTime @updatedAt
 
   channelType ChannelType @relation(fields: [channelTypeId], references: [id], onDelete: Cascade)

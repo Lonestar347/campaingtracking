@@ -23,12 +23,13 @@ export default async function CampaignPlanningPage({ params }: { params: Promise
   if (!campaign) notFound();
   const canEdit = !!user && can(user.role, "write");
 
-  const benchmarkByType = new Map(master.benchmarks.map((b) => [b.channelTypeId, b.values]));
+  const benchmarkByType = new Map(master.benchmarks.map((b) => [b.channelTypeId, b]));
   const channels = campaign.channels.map((c) => ({
     id: c.id,
     name: c.name,
     stage: c.funnelStage as FunnelStage,
-    benchmark: benchmarkByType.get(c.channelTypeId) ?? EMPTY_BENCHMARK,
+    benchmark: benchmarkByType.get(c.channelTypeId)?.values ?? EMPTY_BENCHMARK,
+    extraKpis: benchmarkByType.get(c.channelTypeId)?.extraKpis ?? [],
     currentTargets: parseKpiTargets(c.kpiTargets),
   }));
 
@@ -79,6 +80,9 @@ export default async function CampaignPlanningPage({ params }: { params: Promise
           saved={!!stored}
           budgetEuro={campaign.budgetCents != null ? campaign.budgetCents / 100 : null}
           canEdit={canEdit}
+          channelTypes={master.benchmarks
+            .filter((b) => b.active)
+            .map((b) => ({ id: b.channelTypeId, name: b.name, stage: b.stage }))}
         />
       </section>
 

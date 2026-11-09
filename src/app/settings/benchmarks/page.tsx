@@ -22,6 +22,7 @@ export default async function BenchmarksPage() {
         </p>
       </div>
       <BenchmarkAdmin
+        key={benchmarks.map((b) => b.channelTypeId).join()}
         canEdit={can(user.role, "manage")}
         benchmarks={benchmarks.filter((b) => b.active)}
         leadTimes={leadTimes}

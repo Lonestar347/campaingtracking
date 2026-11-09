@@ -27,6 +27,7 @@ export default async function RootLayout({
     : [];
   const nav = [
     { href: "/", label: "Dashboard" },
+    { href: "/timeline", label: "Timeline" },
     ...(user ? [{ href: "/settings/benchmarks", label: "Benchmarks" }] : []),
     ...(user && can(user.role, "manage") ? [{ href: "/settings/users", label: "Users" }] : []),
   ];

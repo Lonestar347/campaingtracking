@@ -314,7 +314,23 @@ src/
 - Schema: `ChannelBenchmark`, `AssetLeadTime`, `Campaign.reversePlan`, `Asset.goLiveDate` – run
   `npm run db:push` after updating (or `npm run db:reset`). Without stored rows the defaults apply
 
+### Year timeline, more benchmarks and channels in planning ✅
+
+- **Timeline** (main navigation, `/timeline?year=2026`): all campaigns of a year as a Gantt chart
+  with months, today marker and a "running in parallel" row per week (yellow from 3 campaigns at
+  the same time). Each campaign expands to its channels (stage colour, dashed without own dates)
+  and asset deadlines (red = overdue); "Expand all" / "Collapse all", "Show asset deadlines",
+  year switcher. The expanded state is remembered in the browser
+- **Additional KPI benchmarks:** per channel type, further KPIs as a share of the stage volume
+  (awareness: of impressions, consideration: of sessions, sales: of units sold), e.g. Clicks
+  1.2 % of impressions or Leads 2 % of sessions. Maintained under Settings → Benchmarks; in the
+  planning they can be adjusted per channel ("Adjust" / "Use benchmark") and are applied as KPI
+  targets together with the other planned KPIs
+- **New channel types** (Settings → Benchmarks, admins): name and default funnel stage; they are
+  then available with their benchmarks in the charter, the mind map and the planning
+- **Add channel** in the planning per funnel stage (editors): creates the channel in the campaign
+- Schema: `ChannelBenchmark.extraKpis` – run `npm run db:push` after updating
+
 ### Next
 
-Later (phase 8): Microsoft SSO (Auth.js + Entra ID), PostgreSQL on the server, timeline/Gantt
-across campaigns, PDF export of the charter, API integrations (Frontify, SharePoint/Graph, Looker).
+Later (phase 8): Microsoft SSO (Auth.js + Entra ID), PostgreSQL on the server, PDF export of the charter, API integrations (Frontify, SharePoint/Graph, Looker).

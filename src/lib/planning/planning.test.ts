@@ -51,6 +51,24 @@ describe("computeReversePlan", () => {
     expect(social.benchmark.cpm).toBe(4);
   });
 
+  it("plans additional KPIs as a share of the channel volume, plan overrides first", () => {
+    const withExtras = channels.map((c) =>
+      c.id === "social" ? { ...c, extraKpis: [{ name: "Clicks", rate: 2 }] } : c.id === "web" ? { ...c, extraKpis: [{ name: "Leads", rate: 10 }] } : c,
+    );
+    const plan = computeReversePlan(withExtras, { goalType: "units", goalValue: 1000, channels: {} });
+    expect(plan.channels.find((c) => c.id === "social")!.kpis.Clicks).toBe(20_000); // 2 % of 1,000,000
+    expect(plan.channels.find((c) => c.id === "web")!.kpis.Leads).toBe(2000); // 10 % of 20,000 sessions
+    const overridden = computeReversePlan(withExtras, {
+      goalType: "units",
+      goalValue: 1000,
+      channels: { social: { extraKpis: [{ name: "Video views", rate: 30 }] }, web: { extraKpis: [] } },
+    });
+    const social = overridden.channels.find((c) => c.id === "social")!;
+    expect(social.kpis).toMatchObject({ "Video views": 300_000 });
+    expect(social.kpis.Clicks).toBeUndefined();
+    expect(overridden.channels.find((c) => c.id === "web")!.kpis.Leads).toBeUndefined();
+  });
+
   it("warns about missing rates and stages", () => {
     const plan = computeReversePlan([channels[3]], {
       goalType: "revenue",

@@ -13,7 +13,7 @@ import type { AssetStatus, AssetType, FunnelStage } from "../src/lib/domain/enum
 import { launchCharterDataSchema, type LaunchCharterData } from "../src/lib/validation";
 import { storage } from "../src/lib/storage";
 import { renderVisual, type VisualSpec } from "./seed-images";
-import { DEFAULT_BENCHMARKS, DEFAULT_LEAD_TIMES } from "../src/lib/planning/defaults";
+import { DEFAULT_BENCHMARKS, DEFAULT_EXTRA_KPIS, DEFAULT_LEAD_TIMES } from "../src/lib/planning/defaults";
 
 const db = new PrismaClient();
 
@@ -408,7 +408,11 @@ async function main() {
     const created = await db.channelType.create({ data: { ...ct, sortOrder: index } });
     channelTypes.set(ct.key, created);
     const benchmark = DEFAULT_BENCHMARKS[ct.key];
-    if (benchmark) await db.channelBenchmark.create({ data: { channelTypeId: created.id, ...benchmark } });
+    if (benchmark) {
+      await db.channelBenchmark.create({
+        data: { channelTypeId: created.id, ...benchmark, extraKpis: (DEFAULT_EXTRA_KPIS[ct.key] ?? []).map((k) => ({ ...k })) },
+      });
+    }
   }
 
   for (const [assetType, leadTime] of Object.entries(DEFAULT_LEAD_TIMES)) {

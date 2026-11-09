@@ -8,7 +8,7 @@
 
 import { z } from "zod";
 import type { FunnelStage } from "@/lib/domain/enums";
-import type { BenchmarkValues } from "@/lib/planning/defaults";
+import type { BenchmarkValues, ExtraKpi } from "@/lib/planning/defaults";
 
 /** KPI names the plan writes as channel targets (match the funnel's lead KPIs). */
 export const PLAN_KPIS = {
@@ -23,6 +23,21 @@ export const PLAN_KPIS = {
 // Stored plan inputs (Campaign.reversePlan)
 
 const optionalNumber = z.number().finite().nonnegative().nullable().optional();
+
+export const extraKpiSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  rate: z.number().finite().nonnegative().max(1000),
+});
+export const extraKpisSchema = z.array(extraKpiSchema).max(20);
+
+/** Parses stored additional KPIs (invalid entries are dropped). */
+export function parseExtraKpis(value: unknown): ExtraKpi[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((v) => {
+    const parsed = extraKpiSchema.safeParse(v);
+    return parsed.success ? [parsed.data] : [];
+  });
+}
 
 export const reversePlanSchema = z.object({
   goalType: z.enum(["units", "revenue"]),
@@ -42,6 +57,8 @@ export const reversePlanSchema = z.object({
         rateToNext: optionalNumber,
         costPerAction: optionalNumber,
         avgOrderValue: optionalNumber,
+        /** Replaces the channel type's additional KPIs for this plan. */
+        extraKpis: extraKpisSchema.optional(),
       }),
     )
     .default({}),
@@ -62,6 +79,8 @@ export interface PlanChannel {
   stage: FunnelStage;
   /** Benchmarks of the channel type (master data). */
   benchmark: BenchmarkValues;
+  /** Additional KPIs of the channel type (master data). */
+  extraKpis?: ExtraKpi[];
 }
 
 export interface PlannedChannel {
@@ -72,6 +91,8 @@ export interface PlannedChannel {
   share: number;
   /** Benchmarks used (master data with plan overrides). */
   benchmark: BenchmarkValues;
+  /** Additional KPIs used (plan override, else master data). */
+  extraKpis: ExtraKpi[];
   /** KPI targets resulting from the plan. */
   kpis: Record<string, number>;
   /** Media cost of the channel in EUR (null if it has no cost benchmark). */
@@ -141,6 +162,7 @@ export function computeReversePlan(channels: readonly PlanChannel[], input: Reve
           costPerAction: pick(o.costPerAction, c.benchmark.costPerAction),
           avgOrderValue: pick(o.avgOrderValue, c.benchmark.avgOrderValue),
         },
+        extraKpis: o.extraKpis ?? c.extraKpis ?? [],
         kpis: {},
         cost: null,
       });
@@ -215,6 +237,20 @@ export function computeReversePlan(channels: readonly PlanChannel[], input: Reve
       c.kpis[PLAN_KPIS.units] = Math.round(u);
       const value = c.benchmark.avgOrderValue ?? aov;
       if (value) c.kpis[PLAN_KPIS.revenue] = Math.round(u * value);
+    }
+  }
+  // Additional KPIs as a share of each channel's own volume.
+  for (const c of list) {
+    const base =
+      c.stage === "AWARENESS"
+        ? c.kpis[PLAN_KPIS.impressions]
+        : c.stage === "CONSIDERATION"
+          ? c.kpis[PLAN_KPIS.sessions]
+          : c.kpis[PLAN_KPIS.units];
+    if (base == null) continue;
+    for (const extra of c.extraKpis) {
+      const taken = Object.keys(c.kpis).some((k) => k.toLowerCase() === extra.name.trim().toLowerCase());
+      if (!taken) c.kpis[extra.name.trim()] = Math.round((base * extra.rate) / 100);
     }
   }
   cost.total = cost.awareness + cost.consideration;

@@ -64,12 +64,13 @@ export async function applyReversePlan(campaignId: string, plan: unknown): Promi
   if (!campaign) return { ok: false, error: "Campaign not found." };
 
   const { benchmarks } = await getPlanningMasterData();
-  const benchmarkByType = new Map(benchmarks.map((b) => [b.channelTypeId, b.values]));
+  const benchmarkByType = new Map(benchmarks.map((b) => [b.channelTypeId, b]));
   const planChannels: PlanChannel[] = campaign.channels.map((c) => ({
     id: c.id,
     name: c.name,
     stage: c.funnelStage as FunnelStage,
-    benchmark: benchmarkByType.get(c.channelTypeId) ?? EMPTY_BENCHMARK,
+    benchmark: benchmarkByType.get(c.channelTypeId)?.values ?? EMPTY_BENCHMARK,
+    extraKpis: benchmarkByType.get(c.channelTypeId)?.extraKpis ?? [],
   }));
   const result = computeReversePlan(planChannels, parsed.data);
   const updates = result.channels

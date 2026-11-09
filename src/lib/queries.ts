@@ -1,7 +1,14 @@
 import { cache } from "react";
 import { db } from "@/lib/db";
 import { ASSET_TYPES, type AssetType, type FunnelStage } from "@/lib/domain/enums";
-import { DEFAULT_BENCHMARKS, DEFAULT_LEAD_TIMES, EMPTY_BENCHMARK, type LeadTime } from "@/lib/planning/defaults";
+import {
+  DEFAULT_BENCHMARKS,
+  DEFAULT_EXTRA_KPIS,
+  DEFAULT_LEAD_TIMES,
+  EMPTY_BENCHMARK,
+  type LeadTime,
+} from "@/lib/planning/defaults";
+import { parseExtraKpis } from "@/lib/planning/reverse";
 
 /** Campaign with everything the campaign pages need. Cached per request. */
 export const getCampaignBySlug = cache(async (slug: string) => {
@@ -193,6 +200,8 @@ export async function getPlanningMasterData() {
             avgOrderValue: b.avgOrderValue,
           }
         : fallback,
+      // Not stored yet (null) -> defaults; an empty list stays empty.
+      extraKpis: b?.extraKpis != null ? parseExtraKpis(b.extraKpis) : (DEFAULT_EXTRA_KPIS[t.key] ?? []),
     };
   });
   const stored = new Map(leadTimeRows.map((r) => [r.assetType, r]));
@@ -209,3 +218,23 @@ export async function getPlanningMasterData() {
 }
 
 export type PlanningMasterData = Awaited<ReturnType<typeof getPlanningMasterData>>;
+
+/** All campaigns with channel periods and asset due dates (year timeline). */
+export async function getTimelineCampaigns() {
+  return db.campaign.findMany({
+    orderBy: { startDate: "asc" },
+    include: {
+      channels: {
+        orderBy: { sortOrder: "asc" },
+        select: {
+          id: true,
+          name: true,
+          funnelStage: true,
+          startDate: true,
+          endDate: true,
+          assets: { orderBy: { sortOrder: "asc" }, select: { id: true, title: true, status: true, dueDate: true } },
+        },
+      },
+    },
+  });
+}

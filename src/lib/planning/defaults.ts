@@ -38,6 +38,28 @@ const consideration = (costPerAction: number, rateToNext: number): BenchmarkValu
 });
 const sales = (avgOrderValue: number): BenchmarkValues => ({ ...empty, avgOrderValue });
 
+/**
+ * Additional KPI planned as a share of the channel's volume: of impressions
+ * (awareness), sessions (consideration) or units sold (sales).
+ */
+export interface ExtraKpi {
+  name: string;
+  /** % of the stage volume. */
+  rate: number;
+}
+
+/** Stage volume an additional KPI is based on. */
+export const EXTRA_KPI_BASE = { AWARENESS: "impressions", CONSIDERATION: "sessions", SALES: "units sold" } as const;
+
+/** Default additional KPIs by channel type key. */
+export const DEFAULT_EXTRA_KPIS: Record<string, ExtraKpi[]> = {
+  social_reach_paid: [{ name: "Clicks", rate: 1.2 }],
+  influencer: [{ name: "Engagements", rate: 3 }],
+  tv_ctv: [{ name: "Completed views", rate: 70 }],
+  website_content: [{ name: "Leads", rate: 2 }],
+  newsletter_crm: [{ name: "Clicks", rate: 12 }],
+};
+
 /** Default benchmarks by channel type key (see DEFAULT_CHANNEL_TYPES). */
 export const DEFAULT_BENCHMARKS: Record<string, BenchmarkValues> = {
   cinema_placement: awareness(25, 1.5, 0.05),

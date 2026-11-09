@@ -21,9 +21,23 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { STAGE_STYLES } from "@/components/stage-styles";
 import { BENCHMARK_FIELDS } from "@/components/settings/benchmark-admin";
+import { KpiDatalist } from "@/components/kpi-datalist";
+import { ExtraKpiEditor, extraKpiErrors, toExtraKpis, type ExtraKpiText } from "@/components/planning/extra-kpi-editor";
+import { AddPlanChannel, type ChannelTypeOption } from "@/components/planning/add-plan-channel";
+import { EXTRA_KPI_BASE } from "@/lib/planning/defaults";
 
 type Field = keyof BenchmarkValues;
-type ChannelTexts = { share: string } & Record<Field, string>;
+/** `extraKpis` null = the channel type's additional KPIs (master data). */
+type ChannelTexts = { share: string; extraKpis: ExtraKpiText[] | null } & Record<Field, string>;
+const EMPTY_TEXTS: ChannelTexts = {
+  share: "",
+  cpm: "",
+  frequency: "",
+  rateToNext: "",
+  costPerAction: "",
+  avgOrderValue: "",
+  extraKpis: null,
+};
 
 interface Props {
   campaignId: string;
@@ -33,6 +47,8 @@ interface Props {
   saved: boolean;
   budgetEuro: number | null;
   canEdit: boolean;
+  /** Channel types for "Add channel". */
+  channelTypes: ChannelTypeOption[];
 }
 
 const text = (v: number | null | undefined) => (v == null ? "" : formatNumber(v, 4));
@@ -66,6 +82,10 @@ function toPlan(
       costPerAction: num(`${id}.costPerAction`, t.costPerAction),
       avgOrderValue: num(`${id}.avgOrderValue`, t.avgOrderValue),
     };
+    if (t.extraKpis) {
+      if (extraKpiErrors(t.extraKpis).size > 0) invalid.add(`${id}.extraKpis`);
+      else channels[id].extraKpis = toExtraKpis(t.extraKpis);
+    }
   }
   const plan: ReversePlanInput = {
     goalType,
@@ -78,7 +98,7 @@ function toPlan(
   return { plan: invalid.size === 0 ? plan : null, invalid };
 }
 
-export function ReversePlanner({ campaignId, channels, initialPlan, saved, budgetEuro, canEdit }: Props) {
+export function ReversePlanner({ campaignId, channels, initialPlan, saved, budgetEuro, canEdit, channelTypes }: Props) {
   const router = useRouter();
   const [goalType, setGoalType] = React.useState(initialPlan.goalType);
   const [texts, setTexts] = React.useState({
@@ -100,6 +120,7 @@ export function ReversePlanner({ campaignId, channels, initialPlan, saved, budge
             rateToNext: text(o.rateToNext),
             costPerAction: text(o.costPerAction),
             avgOrderValue: text(o.avgOrderValue),
+            extraKpis: o.extraKpis ? o.extraKpis.map((k) => ({ name: k.name, rate: text(k.rate) })) : null,
           },
         ];
       }),
@@ -116,9 +137,13 @@ export function ReversePlanner({ campaignId, channels, initialPlan, saved, budge
     setMessage(null);
     setTexts((t) => ({ ...t, [key]: value }));
   };
-  const setChannel = (id: string, field: keyof ChannelTexts, value: string) => {
+  const setChannel = (id: string, field: Exclude<keyof ChannelTexts, "extraKpis">, value: string) => {
     setMessage(null);
-    setChannelTexts((t) => ({ ...t, [id]: { ...t[id], [field]: value } }));
+    setChannelTexts((t) => ({ ...t, [id]: { ...(t[id] ?? EMPTY_TEXTS), [field]: value } }));
+  };
+  const setExtras = (id: string, items: ExtraKpiText[] | null) => {
+    setMessage(null);
+    setChannelTexts((t) => ({ ...t, [id]: { ...(t[id] ?? EMPTY_TEXTS), extraKpis: items } }));
   };
 
   const run = (apply: boolean) => {
@@ -152,6 +177,7 @@ export function ReversePlanner({ campaignId, channels, initialPlan, saved, budge
 
   return (
     <div className="space-y-6">
+      <KpiDatalist />
       <div className="grid gap-4 lg:grid-cols-[22rem_1fr]">
         {/* Goal and funnel rates */}
         <section aria-labelledby="goal-title" className="space-y-4 rounded-2xl border bg-card p-5">
@@ -269,6 +295,10 @@ export function ReversePlanner({ campaignId, channels, initialPlan, saved, budge
               texts={channelTexts}
               invalid={invalid}
               onChange={setChannel}
+              onExtras={setExtras}
+              campaignId={campaignId}
+              canEdit={canEdit}
+              channelTypes={channelTypes}
             />
           ))}
         </div>
@@ -477,13 +507,21 @@ function StageChannels({
   texts,
   invalid,
   onChange,
+  onExtras,
+  campaignId,
+  canEdit,
+  channelTypes,
 }: {
   stage: FunnelStage;
   channels: Props["channels"];
   planned: ReversePlanResult["channels"];
   texts: Record<string, ChannelTexts>;
   invalid: Set<string>;
-  onChange: (id: string, field: keyof ChannelTexts, value: string) => void;
+  onChange: (id: string, field: Exclude<keyof ChannelTexts, "extraKpis">, value: string) => void;
+  onExtras: (id: string, items: ExtraKpiText[] | null) => void;
+  campaignId: string;
+  canEdit: boolean;
+  channelTypes: ChannelTypeOption[];
 }) {
   const fields = BENCHMARK_FIELDS[stage];
   return (
@@ -496,7 +534,8 @@ function StageChannels({
       {channels.length === 0 && <p className="text-sm text-muted-foreground">No channels in this stage.</p>}
       {channels.map((channel) => {
         const p = planned.find((x) => x.id === channel.id);
-        const t = texts[channel.id];
+        const t = texts[channel.id] ?? EMPTY_TEXTS;
+        const masterExtras = channel.extraKpis ?? [];
         return (
           <article key={channel.id} className="space-y-3 rounded-xl border p-3">
             <div className="flex items-start justify-between gap-2">
@@ -528,6 +567,60 @@ function StageChannels({
                 />
               ))}
             </div>
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs font-medium text-muted-foreground">
+                  Additional KPIs <span className="font-normal">(% of {EXTRA_KPI_BASE[stage]})</span>
+                </p>
+                {t.extraKpis ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-2 text-xs"
+                    onClick={() => onExtras(channel.id, null)}
+                  >
+                    Use benchmark
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-2 text-xs"
+                    onClick={() =>
+                      onExtras(
+                        channel.id,
+                        masterExtras.map((k) => ({ name: k.name, rate: text(k.rate) })),
+                      )
+                    }
+                  >
+                    {masterExtras.length > 0 ? "Adjust" : "Add KPI"}
+                  </Button>
+                )}
+              </div>
+              {t.extraKpis ? (
+                <ExtraKpiEditor
+                  idPrefix={`plan-extra-${channel.id}`}
+                  items={t.extraKpis}
+                  base={EXTRA_KPI_BASE[stage]}
+                  onChange={(items) => onExtras(channel.id, items)}
+                />
+              ) : masterExtras.length > 0 ? (
+                <p className="flex flex-wrap gap-1.5">
+                  {masterExtras.map((k) => (
+                    <span key={k.name} className="rounded-md bg-muted px-2 py-0.5 text-xs">
+                      {k.name} · {formatNumber(k.rate, 4)} %
+                    </span>
+                  ))}
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">None</p>
+              )}
+              {invalid.has(`${channel.id}.extraKpis`) && (
+                <p className="text-xs font-medium text-status-red">Each KPI needs a unique name and a rate.</p>
+              )}
+            </div>
             {p && Object.keys(p.kpis).length > 0 && (
               <dl className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-0.5 rounded-lg bg-muted/60 px-3 py-2 text-sm">
                 {Object.entries(p.kpis).map(([name, value]) => {
@@ -551,6 +644,7 @@ function StageChannels({
           </article>
         );
       })}
+      {canEdit && <AddPlanChannel campaignId={campaignId} stage={stage} channelTypes={channelTypes} />}
     </section>
   );
 }
