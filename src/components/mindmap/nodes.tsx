@@ -2,16 +2,12 @@
 
 import * as React from "react";
 import { Handle, Position, type NodeProps, type Node } from "@xyflow/react";
-import { ChevronLeft, ChevronRight, Link2, MessageSquare, Plus } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Link2, MessageSquare, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ASSET_TYPE_LABELS, CAMPAIGN_PHASE_LABELS, type AssetType, type TrafficLight } from "@/lib/domain/enums";
 import { formatDate, formatDateRange } from "@/lib/dates";
-import type {
-  AssetNodeData,
-  CampaignNodeData,
-  ChannelNodeData,
-  StageNodeData,
-} from "@/lib/mindmap/graph";
+import { HANDLES, type MindmapOrientation } from "@/lib/mindmap/graph";
+import type { AssetNodeData, CampaignNodeData, ChannelNodeData, StageNodeData } from "@/lib/mindmap/graph";
 import type { Progress } from "@/lib/status";
 import { STAGE_STYLES } from "@/components/stage-styles";
 import { ASSET_STATUS_STYLES, AssetStatusChip } from "@/components/asset-status";
@@ -19,12 +15,14 @@ import { ASSET_STATUS_STYLES, AssetStatusChip } from "@/components/asset-status"
 // Callbacks from the canvas, shared via context so node components stay pure.
 export interface MindmapNodeActions {
   canEdit: boolean;
+  orientation: MindmapOrientation;
   onToggle: (nodeId: string) => void;
   onAdd: (nodeId: string) => void;
 }
 
 export const MindmapActionsContext = React.createContext<MindmapNodeActions>({
   canEdit: false,
+  orientation: "horizontal",
   onToggle: () => {},
   onAdd: () => {},
 });
@@ -42,7 +40,9 @@ const LIGHT_DOT: Record<TrafficLight, string> = {
 const LIGHT_LABEL: Record<TrafficLight, string> = { RED: "Critical", YELLOW: "At risk", GREEN: "On track" };
 
 function LightDot({ light }: { light: TrafficLight }) {
-  return <span className={cn("inline-block size-2.5 shrink-0 rounded-full", LIGHT_DOT[light])} title={LIGHT_LABEL[light]} />;
+  return (
+    <span className={cn("inline-block size-2.5 shrink-0 rounded-full", LIGHT_DOT[light])} title={LIGHT_LABEL[light]} />
+  );
 }
 
 function MiniProgress({ progress, className }: { progress: Progress; className?: string }) {
@@ -60,11 +60,32 @@ function MiniProgress({ progress, className }: { progress: Progress; className?:
 
 const hiddenHandle = "!h-1 !w-1 !min-h-0 !min-w-0 !border-0 !bg-transparent";
 
-function Handles({ target = true, source = true }: { target?: boolean; source?: boolean }) {
+/** Invisible connection points for both orientations; edges pick theirs by id (see HANDLES). */
+function Handles({
+  target = true,
+  source = true,
+  list = false,
+}: {
+  target?: boolean;
+  source?: boolean;
+  list?: boolean;
+}) {
+  const handle = (type: "source" | "target", id: string, position: Position, style?: React.CSSProperties) => (
+    <Handle
+      key={id}
+      id={id}
+      type={type}
+      position={position}
+      isConnectable={false}
+      className={hiddenHandle}
+      style={style}
+    />
+  );
   return (
     <>
-      {target && <Handle type="target" position={Position.Left} isConnectable={false} className={hiddenHandle} />}
-      {source && <Handle type="source" position={Position.Right} isConnectable={false} className={hiddenHandle} />}
+      {target && [handle("target", HANDLES.left, Position.Left), handle("target", HANDLES.top, Position.Top)]}
+      {source && [handle("source", HANDLES.right, Position.Right), handle("source", HANDLES.bottom, Position.Bottom)]}
+      {list && handle("source", HANDLES.list, Position.Bottom, { left: 14 })}
     </>
   );
 }
@@ -111,16 +132,25 @@ function NodeControls({
   childCount: number;
   addLabel: string;
 }) {
-  const { canEdit, onToggle, onAdd } = React.useContext(MindmapActionsContext);
+  const { canEdit, onToggle, onAdd, orientation } = React.useContext(MindmapActionsContext);
   return (
-    <div className="absolute -right-3 top-1/2 flex -translate-y-1/2 flex-col gap-1">
+    <div
+      className={cn(
+        "absolute flex gap-1",
+        orientation === "vertical"
+          ? "-bottom-3 left-1/2 -translate-x-1/2 flex-row"
+          : "-right-3 top-1/2 -translate-y-1/2 flex-col",
+      )}
+    >
       {childCount > 0 && (
         <NodeButton label={collapsed ? "Expand" : "Collapse"} onClick={() => onToggle(id)}>
           {collapsed ? (
             <>
               {childCount}
-              <ChevronRight className="size-3" />
+              {orientation === "vertical" ? <ChevronDown className="size-3" /> : <ChevronRight className="size-3" />}
             </>
+          ) : orientation === "vertical" ? (
+            <ChevronUp className="size-3.5" />
           ) : (
             <ChevronLeft className="size-3.5" />
           )}
@@ -189,7 +219,7 @@ export function StageNode({ id, data, selected }: NodeProps<Node<StageNodeData>>
 export function ChannelNode({ id, data, selected }: NodeProps<Node<ChannelNodeData>>) {
   return (
     <div className={cn(nodeBase, "border-l-4 px-3 py-2", LIGHT_BORDER[data.trafficLight], selected && selectedRing)}>
-      <Handles />
+      <Handles list />
       <div className="flex items-center gap-2 pr-2">
         <span className="min-w-0 flex-1 truncate font-medium" title={data.name}>
           {data.name}

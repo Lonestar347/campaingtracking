@@ -151,3 +151,30 @@ describe("helpers", () => {
     ]);
   });
 });
+
+describe("vertical layout", () => {
+  const graph = buildMindmap(campaign, { now: NOW, config, orientation: "vertical" });
+  const map = Object.fromEntries(graph.nodes.map((n) => [n.id, n]));
+
+  it("places levels top-down and lists assets below their channel", () => {
+    expect(map[CAMPAIGN_NODE_ID].position.y).toBe(0);
+    expect(map[stageNodeId("AWARENESS")].position.y).toBeGreaterThan(map[CAMPAIGN_NODE_ID].position.y);
+    expect(map[channelNodeId("tv")].position.y).toBeGreaterThan(map[stageNodeId("AWARENESS")].position.y);
+    const asset = map[assetNodeId("a1")];
+    expect(asset.position.y).toBeGreaterThan(map[channelNodeId("tv")].position.y);
+    expect(asset.position.x).toBeGreaterThan(map[channelNodeId("tv")].position.x);
+  });
+
+  it("orders the stages left to right without overlaps", () => {
+    const xs = ["AWARENESS", "CONSIDERATION", "SALES"].map((s) => map[stageNodeId(s as never)].position.x);
+    expect([...xs].sort((a, b) => a - b)).toEqual(xs);
+    for (const a of graph.nodes) for (const b of graph.nodes) if (a !== b) expect(overlaps(a, b)).toBe(false);
+  });
+
+  it("connects levels from bottom to top and assets via the list handle", () => {
+    const toStage = graph.edges.find((e) => e.target === stageNodeId("AWARENESS"))!;
+    expect(toStage).toMatchObject({ sourceHandle: "out-bottom", targetHandle: "in-top", shape: "tree" });
+    const toAsset = graph.edges.find((e) => e.target === assetNodeId("a1"))!;
+    expect(toAsset).toMatchObject({ sourceHandle: "out-list", targetHandle: "in-left", shape: "list" });
+  });
+});

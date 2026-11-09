@@ -331,6 +331,13 @@ src/
 - **Add channel** in the planning per funnel stage (editors): creates the channel in the campaign
 - Schema: `ChannelBenchmark.extraKpis` – run `npm run db:push` after updating
 
+### Mind map orientation ✅
+
+- Layout switch in the mind map: **Top-down** (default: campaign at the top, the three funnel stages
+  side by side, channels below, each channel's assets as a list underneath) or **Left to right**
+  (the previous layout). The choice is remembered in the browser; collapse/add buttons sit on the
+  bottom edge of the nodes in the top-down layout
+
 ### Next
 
 Later (phase 8): Microsoft SSO (Auth.js + Entra ID), PostgreSQL on the server, PDF export of the charter, API integrations (Frontify, SharePoint/Graph, Looker).

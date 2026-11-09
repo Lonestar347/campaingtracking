@@ -12,7 +12,7 @@ import {
   type Node,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { ChevronsDownUp, ChevronsUpDown, Maximize } from "lucide-react";
+import { ArrowDownFromLine, ArrowRightFromLine, ChevronsDownUp, ChevronsUpDown, Maximize } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { FUNNEL_STAGES, FUNNEL_STAGE_LABELS, type FunnelStage } from "@/lib/domain/enums";
@@ -24,6 +24,7 @@ import {
   parseNodeId,
   stageNodeId,
   type MindmapNodeData,
+  type MindmapOrientation,
 } from "@/lib/mindmap/graph";
 import type { CampaignDetail, CharterFormOptions } from "@/lib/queries";
 import { KpiDatalist } from "@/components/kpi-datalist";
@@ -41,6 +42,17 @@ interface Props {
 }
 
 const collapsedKey = (campaignId: string) => `campaign-tracker:mindmap-collapsed:${campaignId}`;
+const orientationKey = "campaign-tracker:mindmap-orientation";
+const DEFAULT_ORIENTATION: MindmapOrientation = "vertical";
+
+function readOrientation(): MindmapOrientation {
+  try {
+    const stored = window.localStorage.getItem(orientationKey);
+    return stored === "horizontal" || stored === "vertical" ? stored : DEFAULT_ORIENTATION;
+  } catch {
+    return DEFAULT_ORIENTATION;
+  }
+}
 
 function readCollapsed(campaignId: string): Set<string> {
   try {
@@ -109,7 +121,9 @@ function MindmapCanvas({ campaign, options, canEdit, initialSelection = null, te
   const [collapsed, setCollapsed] = React.useState<Set<string>>(() => new Set());
   const [selection, setSelection] = React.useState<Selection | null>(initialSelection);
   const [now, setNow] = React.useState<Date | null>(null);
+  const [orientation, setOrientation] = React.useState<MindmapOrientation>(DEFAULT_ORIENTATION);
   const focusAfterLayout = React.useRef<string | null>(null);
+  const fitAfterLayout = React.useRef(false);
   const mapRef = React.useRef<HTMLDivElement>(null);
 
   // Client-only state: stored collapse state and "now" (avoids hydration mismatches).
@@ -118,6 +132,11 @@ function MindmapCanvas({ campaign, options, canEdit, initialSelection = null, te
     if (initialSelection) for (const id of ancestorsOf(campaign, initialSelection)) stored.delete(id);
     setCollapsed(stored);
     setNow(new Date());
+    const storedOrientation = readOrientation();
+    if (storedOrientation !== DEFAULT_ORIENTATION) {
+      setOrientation(storedOrientation);
+      fitAfterLayout.current = !initialSelection;
+    }
     if (initialSelection) focusAfterLayout.current = nodeIdFor(initialSelection);
     // Only on mount / campaign change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -158,8 +177,8 @@ function MindmapCanvas({ campaign, options, canEdit, initialSelection = null, te
   }, [team.comments]);
 
   const graph = React.useMemo(
-    () => buildMindmap(campaign, { collapsed, now: now ?? undefined, commentCounts }),
-    [campaign, collapsed, now, commentCounts],
+    () => buildMindmap(campaign, { collapsed, now: now ?? undefined, commentCounts, orientation }),
+    [campaign, collapsed, now, commentCounts, orientation],
   );
 
   const selectedNodeId = nodeIdFor(selection);
@@ -185,11 +204,32 @@ function MindmapCanvas({ campaign, options, canEdit, initialSelection = null, te
         id: e.id,
         source: e.source,
         target: e.target,
-        type: "default",
+        sourceHandle: e.sourceHandle,
+        targetHandle: e.targetHandle,
+        type: e.shape === "list" ? "smoothstep" : "default",
+        pathOptions: e.shape === "list" ? { borderRadius: 8, offset: 0 } : undefined,
         style: { stroke: `var(--stage-${e.stage.toLowerCase()})`, strokeWidth: 2, opacity: 0.7 },
       })),
     [graph.edges],
   );
+
+  // After switching the orientation, fit the new layout into view.
+  React.useEffect(() => {
+    if (!fitAfterLayout.current) return;
+    fitAfterLayout.current = false;
+    requestAnimationFrame(() => fitView({ padding: 0.15, duration: 300, maxZoom: 1 }));
+  }, [nodes, fitView]);
+
+  const changeOrientation = (next: MindmapOrientation) => {
+    if (next === orientation) return;
+    setOrientation(next);
+    fitAfterLayout.current = true;
+    try {
+      window.localStorage.setItem(orientationKey, next);
+    } catch {
+      // Remembering the layout is a convenience only.
+    }
+  };
 
   // Bring a node selected via the panel (or deep link) into view once it is laid out.
   React.useEffect(() => {
@@ -204,6 +244,7 @@ function MindmapCanvas({ campaign, options, canEdit, initialSelection = null, te
   const actions = React.useMemo(
     () => ({
       canEdit,
+      orientation,
       onToggle: (nodeId: string) =>
         updateCollapsed((prev) => {
           const next = new Set(prev);
@@ -217,7 +258,7 @@ function MindmapCanvas({ campaign, options, canEdit, initialSelection = null, te
         if (kind === "channel") select({ kind: "new-asset", channelId: key });
       },
     }),
-    [canEdit, updateCollapsed, select],
+    [canEdit, orientation, updateCollapsed, select],
   );
 
   const onNodeClick = (_: React.MouseEvent, node: Node) => {
@@ -285,6 +326,30 @@ function MindmapCanvas({ campaign, options, canEdit, initialSelection = null, te
                 >
                   <Maximize /> Fit view
                 </Button>
+                <div role="radiogroup" aria-label="Layout" className="flex rounded-md border bg-card p-0.5 shadow-xs">
+                  {(
+                    [
+                      ["vertical", "Top-down", ArrowDownFromLine],
+                      ["horizontal", "Left to right", ArrowRightFromLine],
+                    ] as const
+                  ).map(([value, label, Icon]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      role="radio"
+                      aria-checked={orientation === value}
+                      onClick={() => changeOrientation(value)}
+                      className={cn(
+                        "inline-flex h-7 items-center gap-1.5 rounded px-2.5 text-xs font-medium transition-colors",
+                        orientation === value
+                          ? "bg-foreground text-background"
+                          : "text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      <Icon className="size-3.5" /> {label}
+                    </button>
+                  ))}
+                </div>
               </Panel>
               <Panel position="bottom-left">
                 <Legend />
